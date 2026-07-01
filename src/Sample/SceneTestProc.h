@@ -5,13 +5,13 @@
 class SceneTestProc : public Scene::Base
 {
 public:
-	BP_CLASS_DECL(SceneTestProc, u8"プロセステスト");
+    BP_CLASS_DECL(SceneTestProc, u8"プロセステスト");
 
-	bool Init() override;
-	void Update() override;
-	void Draw() override;
-	void Exit() override;
-	void GUI() override;
+    bool Init() override;
+    void Update() override;
+    void Draw() override;
+    void Exit() override;
+    void GUI() override;
 
-	void InitSerialize() override;
+    void InitSerialize() override;
 };

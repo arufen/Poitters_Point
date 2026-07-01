@@ -5,9 +5,9 @@
 class SceneEmpty : public Scene::Base
 {
 public:
-	BP_CLASS_DECL(SceneEmpty, u8"Empty　シーンテスト");
+    BP_CLASS_DECL(SceneEmpty, u8"Empty　シーンテスト");
 
-	bool Init() override;
+    bool Init() override;
 
-	void Update() override;
+    void Update() override;
 };

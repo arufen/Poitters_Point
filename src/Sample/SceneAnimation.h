@@ -12,21 +12,21 @@
 class SceneAnimation final : public Scene::Base
 {
 public:
-	BP_CLASS_DECL(SceneAnimation, u8"アニメーションサンプル")
+    BP_CLASS_DECL(SceneAnimation, u8"アニメーションサンプル")
 
-	//----------------------------------------------------------
-	//! @name   内部クラス
-	//----------------------------------------------------------
-	//@{
+    //----------------------------------------------------------
+    //! @name   内部クラス
+    //----------------------------------------------------------
+    //@{
 
-	class Character;	//!< キャラクタークラス
+    class Character;    //!< キャラクタークラス
 
-	//@}
-	bool Init() override;	   //!< 初期化
-	void Update() override;	   //!< 更新
-	void Draw() override;	   //!< 描画
-	void Exit() override;	   //!< 終了
-	void GUI() override;	   //!< GUI表示
+    //@}
+    bool Init() override;      //!< 初期化
+    void Update() override;    //!< 更新
+    void Draw() override;      //!< 描画
+    void Exit() override;      //!< 終了
+    void GUI() override;       //!< GUI表示
 
 private:
 };

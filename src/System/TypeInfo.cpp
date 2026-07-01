@@ -19,30 +19,27 @@ TypeInfo TypeInfo::Root = TypeInfo("root", 0, nullptr);
 
 TypeInfo::TypeInfo(const char* class_name, size_t class_size, TypeInfo* parent_type, const char* desc_name)
 {
-	// パラメーターの保存
-	class_name_ = class_name;
-	desc_name_	= desc_name;
-	class_size_ = class_size;
+    // パラメーターの保存
+    class_name_ = class_name;
+    desc_name_  = desc_name;
+    class_size_ = class_size;
 
-	//----------------------------------------------------------
-	// 継承ツリー構造の構築
-	//----------------------------------------------------------
-	if(parent_type == nullptr && strcmp(class_name, "root"))
-	{									  // "root"ではない
-		parent_type = &TypeInfo::Root;	  // 基底クラスはルートに接続する
-	}
+    //----------------------------------------------------------
+    // 継承ツリー構造の構築
+    //----------------------------------------------------------
+    if(parent_type == nullptr && strcmp(class_name, "root")) {    // "root"ではない
+        parent_type = &TypeInfo::Root;                            // 基底クラスはルートに接続する
+    }
 
-	parent_ = parent_type;
-	if(parent_type)
-	{
-		auto child = parent_type->child();
-		// 親クラスの子があった場合は追加登録、子が一つもない場合は新規登録
-		if(child)
-		{
-			siblings_ = child;
-		}
-		parent_type->child_ = this;
-	}
+    parent_ = parent_type;
+    if(parent_type) {
+        auto child = parent_type->child();
+        // 親クラスの子があった場合は追加登録、子が一つもない場合は新規登録
+        if(child) {
+            siblings_ = child;
+        }
+        parent_type->child_ = this;
+    }
 }
 
 #pragma warning(pop)
@@ -52,7 +49,7 @@ TypeInfo::TypeInfo(const char* class_name, size_t class_size, TypeInfo* parent_t
 //---------------------------------------------------------------------------
 void* TypeInfo::createInstance() const
 {
-	return nullptr;
+    return nullptr;
 }
 
 //---------------------------------------------------------------------------
@@ -60,7 +57,7 @@ void* TypeInfo::createInstance() const
 //---------------------------------------------------------------------------
 const char* TypeInfo::className() const
 {
-	return class_name_;
+    return class_name_;
 }
 
 //---------------------------------------------------------------------------
@@ -68,7 +65,7 @@ const char* TypeInfo::className() const
 //---------------------------------------------------------------------------
 const char* TypeInfo::descName() const
 {
-	return desc_name_;
+    return desc_name_;
 }
 
 //---------------------------------------------------------------------------
@@ -76,7 +73,7 @@ const char* TypeInfo::descName() const
 //---------------------------------------------------------------------------
 size_t TypeInfo::classSize() const
 {
-	return class_size_;
+    return class_size_;
 }
 
 //---------------------------------------------------------------------------
@@ -84,7 +81,7 @@ size_t TypeInfo::classSize() const
 //---------------------------------------------------------------------------
 const TypeInfo* TypeInfo::parent() const
 {
-	return parent_;
+    return parent_;
 }
 
 //---------------------------------------------------------------------------
@@ -92,7 +89,7 @@ const TypeInfo* TypeInfo::parent() const
 //---------------------------------------------------------------------------
 const TypeInfo* TypeInfo::child() const
 {
-	return child_;
+    return child_;
 }
 
 //---------------------------------------------------------------------------
@@ -100,7 +97,7 @@ const TypeInfo* TypeInfo::child() const
 //---------------------------------------------------------------------------
 const TypeInfo* TypeInfo::siblings() const
 {
-	return siblings_;
+    return siblings_;
 }
 
 //===========================================================================
@@ -112,48 +109,42 @@ const TypeInfo* TypeInfo::siblings() const
 //---------------------------------------------------------------------------
 void* CreateInstanceFromName(std::string_view class_name, const TypeInfo& base_type)
 {
-	const TypeInfo* p				   = base_type.child();
-	bool			returnFromTraverse = false;
-	const TypeInfo* next			   = nullptr;
+    const TypeInfo* p                  = base_type.child();
+    bool            returnFromTraverse = false;
+    const TypeInfo* next               = nullptr;
 
-	//----------------------------------------------------------
-	// 継承ツリー構造を探索
-	// スタック再帰を使わない高速なツリー探索 (stackless tree traversal)
-	//----------------------------------------------------------
-	if(!p)
-		return nullptr;
+    //----------------------------------------------------------
+    // 継承ツリー構造を探索
+    // スタック再帰を使わない高速なツリー探索 (stackless tree traversal)
+    //----------------------------------------------------------
+    if(!p)
+        return nullptr;
 
-	while(p != &base_type)
-	{
-		if(!returnFromTraverse)
-		{
-			// 名前チェックして一致したら作成
-			if(p->className() == class_name)
-			{
-				return p->createInstance();
-			}
-		}
+    while(p != &base_type) {
+        if(!returnFromTraverse) {
+            // 名前チェックして一致したら作成
+            if(p->className() == class_name) {
+                return p->createInstance();
+            }
+        }
 
-		if(p->child() && !returnFromTraverse)
-		{
-			// 子がある場合は子を先に調べる。(子から探索で戻ってきた場合は除外)
-			next			   = p->child();
-			returnFromTraverse = false;
-		}
-		else if(p->siblings())
-		{
-			// 兄弟がいる場合は兄弟を調べる
-			next			   = p->siblings();
-			returnFromTraverse = false;
-		}
-		else
-		{
-			// 親へ戻る。
-			next			   = p->parent();
-			returnFromTraverse = true;
-		}
-		p = next;
-	}
+        if(p->child() && !returnFromTraverse) {
+            // 子がある場合は子を先に調べる。(子から探索で戻ってきた場合は除外)
+            next               = p->child();
+            returnFromTraverse = false;
+        }
+        else if(p->siblings()) {
+            // 兄弟がいる場合は兄弟を調べる
+            next               = p->siblings();
+            returnFromTraverse = false;
+        }
+        else {
+            // 親へ戻る。
+            next               = p->parent();
+            returnFromTraverse = true;
+        }
+        p = next;
+    }
 
-	return nullptr;
+    return nullptr;
 }

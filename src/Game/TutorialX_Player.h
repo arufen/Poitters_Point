@@ -4,18 +4,17 @@
 //---------------------------------------------------------------------------
 #include <System/Scene.h>
 
-namespace TutorialX
+namespace TutorialX {
+USING_PTR(Player);
+class Player : public Object
 {
-	USING_PTR(Player);
-	class Player : public Object
-	{
-	public:
-		BP_OBJECT_DECL(Player, "TutorialX::Player");
+public:
+    BP_OBJECT_DECL(Player, "TutorialX::Player");
 
-		//! @brief 初期化
-		//! @return 初期化終了
-		bool Init() override;
+    //! @brief 初期化
+    //! @return 初期化終了
+    bool Init() override;
 
-		void Update() override;
-	};
-}	 // namespace TutorialX
+    void Update() override;
+};
+}    // namespace TutorialX

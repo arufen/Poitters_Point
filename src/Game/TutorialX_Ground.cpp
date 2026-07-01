@@ -6,20 +6,19 @@
 #include "TutorialX_Ground.h"
 #include "TutorialX.h"
 
-namespace TutorialX
+namespace TutorialX {
+//! @brief 初期化
+//! @return 初期化終了
+bool Ground::Init()
 {
-	//! @brief 初期化
-	//! @return 初期化終了
-	bool Ground::Init()
-	{
-		Super::Init();
+    Super::Init();
 
-		SetName("Ground");
+    SetName("Ground");
 
-		//auto ground = Scene::Object::Create<Object>("Ground");
-		AddComponent<ComponentModel>("data/Sample/SwordBout/Stage/Stage00.mv1");
-		AddComponent<ComponentCollisionModel>()->AttachToModel();
+    //auto ground = Scene::Object::Create<Object>("Ground");
+    AddComponent<ComponentModel>("data/Sample/SwordBout/Stage/Stage00.mv1");
+    AddComponent<ComponentCollisionModel>()->AttachToModel();
 
-		return true;
-	}
-}	 // namespace TutorialX
+    return true;
+}
+}    // namespace TutorialX
