@@ -1,17 +1,17 @@
 ﻿//---------------------------------------------------------------------------
-//!	@file	Tutorial_X.h
-//! @brief	Tutorial_X
+//!	@file	MainStage.h
+//! @brief	MainStage
 //---------------------------------------------------------------------------
 #include <System/Scene.h>
 
-namespace TutorialX {
+namespace PoittersPoint {
 
-class Tutorial_X : public Scene::Base
+class PoittersPoint_MainStage : public Scene::Base
 {
 public:
     static constexpr int MAX_ENEMIES = 5;
 
-    BP_CLASS_DECL(Tutorial_X, u8"TutorialX::Tutorial X のシーン");
+    BP_CLASS_DECL(PoittersPoint_MainStage, u8"MainStage");
 
     //! @brief 初期化
     //! @return 初期化済み
@@ -27,4 +27,4 @@ private:
     int enemy_dead_count_ = 0;
 };
 
-}    // namespace TutorialX
+}    // namespace PoittersPoint

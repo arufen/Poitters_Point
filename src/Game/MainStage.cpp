@@ -1,8 +1,8 @@
 ﻿//---------------------------------------------------------------------------
-//!	@file	Tutorial_X.cpp
-//! @brief	Tutorial_X
+//!	@file	MainStage.cpp
+//! @brief	MainStage
 //---------------------------------------------------------------------------
-#include "TutorialX.h"
+#include "MainStage.h"
 #include "TutorialX_GameOver.h"
 
 #include "TutorialX_Player.h"
@@ -10,46 +10,46 @@
 #include "TutorialX_Camera.h"
 #include "TutorialX_Enemy.h"
 
-namespace TutorialX {
+namespace PoittersPoint {
 
-void Tutorial_X::createEnemy()
+void PoittersPoint_MainStage::createEnemy()
 {
-    for(int i = 0; i < MAX_ENEMIES; i++) Scene::Object::Create<Enemy>();
+    for(int i = 0; i < MAX_ENEMIES; i++) Scene::Object::Create<TutorialX::Enemy>();
 }
 
 //! @brief 初期化
 //! @return 初期化済み
-bool Tutorial_X::Init()
+bool PoittersPoint_MainStage::Init()
 {
     // 最初に1回動作する
     // ただし trueを返さなければ Initに何回も来る仕様。
 
-    Scene::Object::Create<Ground>();
+    Scene::Object::Create<TutorialX::Ground>();
 
-    Scene::Object::Create<Player>();
+    Scene::Object::Create<TutorialX::Player>();
 
-    Scene::Object::Create<Camera>();
+    Scene::Object::Create<TutorialX::Camera>();
 
     createEnemy();
 
     return true;
 }
 
-void Tutorial_X::Update()
+void PoittersPoint_MainStage::Update()
 {
     printfDx("\nDEAD ENEMY: %d", enemy_dead_count_);
 
     if(enemy_dead_count_ >= MAX_ENEMIES) {
         //createEnemy();
-        Scene::Change(Scene::GetScene<TutorialX_GameOver>());
+        Scene::Change(Scene::GetScene<TutorialX::TutorialX_GameOver>());
 
         enemy_dead_count_ = 0;
     }
 }
 
-void Tutorial_X::AddDeadEnemy()
+void PoittersPoint_MainStage::AddDeadEnemy()
 {
     enemy_dead_count_++;
 }
 
-}    // namespace TutorialX
+}    // namespace PoittersPoint

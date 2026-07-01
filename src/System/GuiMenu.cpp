@@ -20,8 +20,9 @@ void GuiMenuScene::GUI()
     };
 
     static Group groups[] = {
-        { "Tutorial",    u8"Tutorial / チュートリアル"},
-        {"SceneTest", u8"SceneTest / 使用方法サンプル"},
+        {     "Tutorial",            u8"Tutorial / チュートリアル"},
+        {    "SceneTest",         u8"SceneTest / 使用方法サンプル"},
+        {"PoittersPoint", u8"PoittersPoint / ポイッターズポイント"},
     };
 
     static std::vector<const TypeInfo*> scene_types;
