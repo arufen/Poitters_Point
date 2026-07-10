@@ -16,7 +16,7 @@ bool Ground::Init()
     SetName("Ground");
 
     //auto ground = Scene::Object::Create<Object>("Ground");
-    AddComponent<ComponentModel>("data/Sample/SwordBout/Stage/Stage00.mv1");
+    AddComponent<ComponentModel>("data/Sample/SwordBout/Stage/Stage.mv1");
     AddComponent<ComponentCollisionModel>()->AttachToModel();
 
     return true;
