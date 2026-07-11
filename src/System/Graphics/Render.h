@@ -59,9 +59,9 @@ void ClearStencil(const Texture* texture, u8 stencil_value);
 //! RenderTarget情報
 struct TargetDesc
 {
-	u32															 color_count_	= 0;
-	std::array<Texture*, D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT> color_targets_ = {};
-	Texture*													 depth_stencil_ = nullptr;
+    u32                                                          color_count_   = 0;
+    std::array<Texture*, D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT> color_targets_ = {};
+    Texture*                                                     depth_stencil_ = nullptr;
 };
 
 //! 現在のRenderTarget情報を取得
@@ -121,11 +121,11 @@ void RenderExit();
 //--------------------------------------------------------------
 enum class RenderFeature
 {
-	Shadow,		// シャドウ
-	GBuffer,	// GBuffer
+    Shadow,     // シャドウ
+    GBuffer,    // GBuffer
 
-	//----
-	CountMax,
+    //----
+    CountMax,
 };
 
 // 描画機能を有効化/無効化

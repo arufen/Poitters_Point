@@ -5,42 +5,41 @@
 #include <System/Component/ComponentCollisionModel.h>
 #include <System/Utils/HelperLib.h>
 
-namespace Sample::GameSample
+namespace Sample::GameSample {
+
+BoxPtr Box::Create(const float3& pos, const float3& front)
 {
+    // 箱の作成
+    auto box = Scene::Object::Create<Box>();
 
-	BoxPtr Box::Create(const float3& pos, const float3& front)
-	{
-		// 箱の作成
-		auto box = Scene::Object::Create<Box>();
+    // vecの方向に向ける
+    auto mat = HelperLib::Math::CreateMatrixByFrontVector(front);
+    box->SetMatrix(mat);
 
-		// vecの方向に向ける
-		auto mat = HelperLib::Math::CreateMatrixByFrontVector(front);
-		box->SetMatrix(mat);
+    // posの位置に設定
+    box->SetTranslate(pos);
 
-		// posの位置に設定
-		box->SetTranslate(pos);
+    return box;
+}
 
-		return box;
-	}
+bool Box::Init()
+{
+    Super::Init();
 
-	bool Box::Init()
-	{
-		Super::Init();
+    SetName("Box");
 
-		SetName("Box");
+    // モデルを使用する( 3倍の大きさとする )
+    AddComponent<ComponentModel>("data/Sample/Sci-fi_Box/Sci-fi Box.mv1")->SetScaleAxisXYZ({3.0f});
 
-		// モデルを使用する( 3倍の大きさとする )
-		AddComponent<ComponentModel>("data/Sample/Sci-fi_Box/Sci-fi Box.mv1")->SetScaleAxisXYZ({3.0f});
+    // 使用しているモデルにその形状の当たりをつける
+    AddComponent<ComponentCollisionModel>()->AttachToModel(true);
 
-		// 使用しているモデルにその形状の当たりをつける
-		AddComponent<ComponentCollisionModel>()->AttachToModel(true);
+    return true;
+}
 
-		return true;
-	}
+void Box::Update()
+{
+    AddTranslate({0, 0, -0.05f});
+}
 
-	void Box::Update()
-	{
-		AddTranslate({0, 0, -0.05f});
-	}
-
-}	 // namespace Sample::GameSample
+}    // namespace Sample::GameSample

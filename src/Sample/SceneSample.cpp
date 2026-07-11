@@ -9,10 +9,10 @@
 //---------------------------------------------------------------------------
 bool SceneSample::Init()
 {
-	// 仮モデルの読み込み
-	model_ = MV1LoadModel("data/Sample/Player/model.mv1");
+    // 仮モデルの読み込み
+    model_ = MV1LoadModel("data/Sample/Player/model.mv1");
 
-	return true;
+    return true;
 }
 
 //---------------------------------------------------------------------------
@@ -21,14 +21,14 @@ bool SceneSample::Init()
 //---------------------------------------------------------------------------
 void SceneSample::Update()
 {
-	// 仮モデルの設定
-	MV1SetPosition(model_, {0.0f, 0.0f, 0.0f});
-	MV1SetRotationXYZ(model_, {0.0f, 0.0f, 0.0f});
-	MV1SetScale(model_, {0.05f, 0.05f, 0.05f});
+    // 仮モデルの設定
+    MV1SetPosition(model_, {0.0f, 0.0f, 0.0f});
+    MV1SetRotationXYZ(model_, {0.0f, 0.0f, 0.0f});
+    MV1SetScale(model_, {0.05f, 0.05f, 0.05f});
 
-	// カメラの設定
-	SetCameraPositionAndTarget_UpVecY({0.f, 6.f, -15.f}, {0.f, 5.f, 0.f});
-	SetupCamera_Perspective(60.0f * DegToRad);
+    // カメラの設定
+    SetCameraPositionAndTarget_UpVecY({0.f, 6.f, -15.f}, {0.f, 5.f, 0.f});
+    SetupCamera_Perspective(60.0f * DegToRad);
 }
 
 //---------------------------------------------------------------------------
@@ -36,8 +36,8 @@ void SceneSample::Update()
 //---------------------------------------------------------------------------
 void SceneSample::Draw()
 {
-	// 仮モデルの描画
-	MV1DrawModel(model_);
+    // 仮モデルの描画
+    MV1DrawModel(model_);
 }
 
 //---------------------------------------------------------------------------
@@ -45,7 +45,7 @@ void SceneSample::Draw()
 //---------------------------------------------------------------------------
 void SceneSample::Exit()
 {
-	MV1DeleteModel(model_);
+    MV1DeleteModel(model_);
 }
 
 //---------------------------------------------------------------------------

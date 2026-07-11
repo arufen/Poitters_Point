@@ -12,14 +12,14 @@
 class SceneSample final : public Scene::Base
 {
 public:
-	BP_CLASS_DECL(SceneSample, u8"サンプル");
+    BP_CLASS_DECL(SceneSample, u8"サンプル");
 
-	bool Init() override;	   //!< 初期化
-	void Update() override;	   //!< 更新
-	void Draw() override;	   //!< 描画
-	void Exit() override;	   //!< 終了
-	void GUI() override;	   //!< GUI表示
+    bool Init() override;      //!< 初期化
+    void Update() override;    //!< 更新
+    void Draw() override;      //!< 描画
+    void Exit() override;      //!< 終了
+    void GUI() override;       //!< GUI表示
 
 private:
-	int model_ = -1;	//!< MV1モデルハンドル
+    int model_ = -1;    //!< MV1モデルハンドル
 };

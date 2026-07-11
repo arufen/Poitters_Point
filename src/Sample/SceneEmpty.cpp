@@ -2,7 +2,7 @@
 
 bool SceneEmpty::Init()
 {
-	return true;
+    return true;
 }
 
 void SceneEmpty::Update()

@@ -9,13 +9,13 @@
 //---------------------------------------------------------------------------
 // シグナル
 //---------------------------------------------------------------------------
-using SignalsUpdate	 = sigslot::signal<float>;
-using SignalsDraw	 = sigslot::signal<>;
+using SignalsUpdate  = sigslot::signal<float>;
+using SignalsDraw    = sigslot::signal<>;
 using SignalsPrePost = sigslot::signal<>;
-using SignalsGUI	 = sigslot::signal<>;
+using SignalsGUI     = sigslot::signal<>;
 
 // ユーザーシグナル
-using SignalsShadow	 = sigslot::signal<>;
+using SignalsShadow  = sigslot::signal<>;
 using SignalsGBuffer = sigslot::signal<>;
-using SignalsLight	 = sigslot::signal<>;
-using SignalsHDR	 = sigslot::signal<>;
+using SignalsLight   = sigslot::signal<>;
+using SignalsHDR     = sigslot::signal<>;

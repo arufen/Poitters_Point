@@ -11,12 +11,12 @@
 
 enum class PAD_NO : unsigned int
 {
-	PAD_NO1 = 0,
-	PAD_NO2,
-	PAD_NO3,
-	PAD_NO4,
+    PAD_NO1 = 0,
+    PAD_NO2,
+    PAD_NO3,
+    PAD_NO4,
 
-	PAD_NO_MAX
+    PAD_NO_MAX
 };
 
 //@}
@@ -26,42 +26,42 @@ enum class PAD_NO : unsigned int
 //@{
 enum class PAD_ID : unsigned int
 {
-	PAD_A = 0,	   // Aキー
-	PAD_B,		   // Bキー
-	PAD_X,		   // Xキー
-	PAD_Y,		   // Yキー
-	PAD_L,		   // LBボタン（左人差し指側）
-	PAD_R,		   // RBボタン（右人差し指側）
-	PAD_START,	   // STARTボタン
-	PAD_BACK,	   // BACKボタン
-	PAD_L_PUSH,	   // 左アナログスティック押し込み
-	PAD_R_PUSH,	   // 右アナログスティック押し込み
+    PAD_A = 0,     // Aキー
+    PAD_B,         // Bキー
+    PAD_X,         // Xキー
+    PAD_Y,         // Yキー
+    PAD_L,         // LBボタン（左人差し指側）
+    PAD_R,         // RBボタン（右人差し指側）
+    PAD_START,     // STARTボタン
+    PAD_BACK,      // BACKボタン
+    PAD_L_PUSH,    // 左アナログスティック押し込み
+    PAD_R_PUSH,    // 右アナログスティック押し込み
 
-	// 左アナログスティック
-	PAD_UP,		  // 上
-	PAD_DOWN,	  // 下
-	PAD_LEFT,	  // 左
-	PAD_RIGHT,	  // 右
+    // 左アナログスティック
+    PAD_UP,       // 上
+    PAD_DOWN,     // 下
+    PAD_LEFT,     // 左
+    PAD_RIGHT,    // 右
 
-	// 右アナログスティック
-	PAD_R_UP,		// 上
-	PAD_R_DOWN,		// 下
-	PAD_R_LEFT,		// 左
-	PAD_R_RIGHT,	// 右
+    // 右アナログスティック
+    PAD_R_UP,       // 上
+    PAD_R_DOWN,     // 下
+    PAD_R_LEFT,     // 左
+    PAD_R_RIGHT,    // 右
 
-	// 方向キー
-	PAD_D_UP,		// 上
-	PAD_D_RIGHT,	// 右
-	PAD_D_DOWN,		// 下
-	PAD_D_LEFT,		// 左
-	PAD_D_ALL,		// 方向キー全て
+    // 方向キー
+    PAD_D_UP,       // 上
+    PAD_D_RIGHT,    // 右
+    PAD_D_DOWN,     // 下
+    PAD_D_LEFT,     // 左
+    PAD_D_ALL,      // 方向キー全て
 
-	PAD_ID_MAX,
+    PAD_ID_MAX,
 
-	// 場所不明
-	PAD_C,	  // 対応キーなし
-	PAD_Z,	  // 対応キーなし
-	PAD_M,	  // 対応キーなし
+    // 場所不明
+    PAD_C,    // 対応キーなし
+    PAD_Z,    // 対応キーなし
+    PAD_M,    // 対応キーなし
 };
 
 //@}

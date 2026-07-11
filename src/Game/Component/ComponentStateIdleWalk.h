@@ -7,65 +7,59 @@ USING_PTR(ComponentStateIdleWalk);
 class ComponentStateIdleWalk : public Component
 {
 public:
-	BP_COMPONENT_DECL(ComponentStateIdleWalk, u8"移動コンポーネント");
+    BP_COMPONENT_DECL(ComponentStateIdleWalk, u8"移動コンポーネント");
 
-	void Init() override;
+    void Init() override;
 
-	void Update() override;
+    void Update() override;
 
-	ComponentStateIdleWalkPtr SetMoveSpeed(const float speed);
+    ComponentStateIdleWalkPtr SetMoveSpeed(const float speed);
 
-	ComponentStateIdleWalkPtr SetRotateSpeed(const float speed);
+    ComponentStateIdleWalkPtr SetRotateSpeed(const float speed);
 
-	ComponentStateIdleWalkPtr SetKeys(int up, int down, int left, int right);
+    ComponentStateIdleWalkPtr SetKeys(int up, int down, int left, int right);
 
-	const float GetMoveSpeed() const;
-	const float GetRotateSpeed() const;
+    const float GetMoveSpeed() const;
+    const float GetRotateSpeed() const;
 
-	inline const void SetFrontRotate(float rotate)
-	{
-		front_rot_ = rotate;
-	}
-	inline const float GetFrontRotate() const
-	{
-		return front_rot_;
-	}
+    inline const void  SetFrontRotate(float rotate) { front_rot_ = rotate; }
+    inline const float GetFrontRotate() const { return front_rot_; }
 
-	void GUI() override;
+    void GUI() override;
 
 private:
-	float move_speed_ = 1.0f;
-	float rot_speed_  = 5.0f;
+    float move_speed_ = 1.0f;
+    float rot_speed_  = 5.0f;
 
-	int key_up_	   = KEY_INPUT_W;
-	int key_down_  = KEY_INPUT_S;
-	int key_left_  = KEY_INPUT_A;
-	int key_right_ = KEY_INPUT_D;
+    int key_up_    = KEY_INPUT_W;
+    int key_down_  = KEY_INPUT_S;
+    int key_left_  = KEY_INPUT_A;
+    int key_right_ = KEY_INPUT_D;
 
-	float front_rot_ = 0.0f;	//!<前方ベクトルの回転角度(0-360度)
+    float front_rot_ = 0.0f;    //!<前方ベクトルの回転角度(0-360度)
 
-	//--------------------------------------------------------------------
-	//! @name Cereal処理
-	//--------------------------------------------------------------------
-	//@{
+    //--------------------------------------------------------------------
+    //! @name Cereal処理
+    //--------------------------------------------------------------------
+    //@{
 
-	//! @brief セーブ
-	// @param arc アーカイバ
-	// @param ver バージョン
-	CEREAL_SAVELOAD(arc, ver)
-	{
-		arc(CEREAL_NVP(move_speed_),
-			CEREAL_NVP(rot_speed_),
+    //! @brief セーブ
+    // @param arc アーカイバ
+    // @param ver バージョン
+    CEREAL_SAVELOAD(arc, ver)
+    {
+        arc(CEREAL_NVP(move_speed_),
+            CEREAL_NVP(rot_speed_),
 
-			CEREAL_NVP(key_up_),
-			CEREAL_NVP(key_down_),
-			CEREAL_NVP(key_left_),
-			CEREAL_NVP(key_right_),
+            CEREAL_NVP(key_up_),
+            CEREAL_NVP(key_down_),
+            CEREAL_NVP(key_left_),
+            CEREAL_NVP(key_right_),
 
-			CEREAL_NVP(front_rot_));
+            CEREAL_NVP(front_rot_));
 
-		arc(cereal::make_nvp("Component", cereal::base_class<Component>(this)));
-	}
+        arc(cereal::make_nvp("Component", cereal::base_class<Component>(this)));
+    }
 };
 
 CEREAL_CLASS_VERSION(ComponentStateIdleWalk, 4);
