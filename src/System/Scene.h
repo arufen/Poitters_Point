@@ -82,17 +82,17 @@ public:
         virtual bool Init() { return true; }    //!< 初期化
 
         virtual void Update() {}    //!< 更新
-        virtual void Draw() {}      //!< 描画
-        virtual void Exit() {}      //!< 終了
-        virtual void GUI() {}       //!< GUI表示
+        virtual void Draw() {}    //!< 描画
+        virtual void Exit() {}    //!< 終了
+        virtual void GUI() {}    //!< GUI表示
 
-        virtual void PreUpdate() {}      //!< 更新前処理
-        virtual void LateUpdate() {}     //!< 通常更新の後更新処理
-        virtual void PrePhysics() {}     //!< 物理前(アクション後)処理
+        virtual void PreUpdate() {}    //!< 更新前処理
+        virtual void LateUpdate() {}    //!< 通常更新の後更新処理
+        virtual void PrePhysics() {}    //!< 物理前(アクション後)処理
         virtual void PostPhysics() {}    //!< 物理後処理
-        virtual void PostUpdate() {}     //!< 更新後(物理後)処理
+        virtual void PostUpdate() {}    //!< 更新後(物理後)処理
 
-        virtual void PreDraw() {}     //!< 描画前処理
+        virtual void PreDraw() {}    //!< 描画前処理
         virtual void LateDraw() {}    //!< 遅い描画の処理
         virtual void PostDraw() {}    //!< 描画後の処理
 
