@@ -24,7 +24,7 @@ bool Player::Init()
     AddComponent<ComponentModel>("data/Game/Models/Player/TPoseOtherSkin.mv1")
         ->SetAnimation({
             { "idle", "data/Game/Models/Player/Anims/OldManIdle.mv1", 0, 1.0f}, // Idle
-            { "walk",       "data/Game/Models/Player/Anims/test.mv1", 1, 1.0f}, // Jump
+            { "walk",    "data/Game/Models/Player/Anims/Walking.mv1", 0, 1.0f}, // Jump
             {"throw",      "data/Game/Models/Player/Anims/Throw.mv1", 1, 1.0f}  // Throw
     });
 
