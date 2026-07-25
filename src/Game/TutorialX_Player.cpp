@@ -21,11 +21,11 @@ bool Player::Init()
     SetName("Player");
 
     //auto player = Scene::Object::Create<Object>("Player");
-    AddComponent<ComponentModel>("data/Game/Models/Player/Player.mv1")
+    AddComponent<ComponentModel>("data/Game/Models/Player/TPoseOtherSkin.mv1")
         ->SetAnimation({
-            { "idle",  "data/Game/Models/Player/Anims/test.mv1", 0, 1.0f}, // Idle
-            { "walk",  "data/Game/Models/Player/Anims/test.mv1", 1, 1.0f}, // Jump
-            {"throw", "data/Game/Models/Player/Anims/Throw.mv1", 1, 1.0f}  // Throw
+            { "idle", "data/Game/Models/Player/Anims/OldManIdle.mv1", 0, 1.0f}, // Idle
+            { "walk",       "data/Game/Models/Player/Anims/test.mv1", 1, 1.0f}, // Jump
+            {"throw",      "data/Game/Models/Player/Anims/Throw.mv1", 1, 1.0f}  // Throw
     });
 
     SetTranslate({0, 5, 0});
