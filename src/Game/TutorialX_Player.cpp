@@ -23,8 +23,8 @@ bool Player::Init()
     //auto player = Scene::Object::Create<Object>("Player");
     AddComponent<ComponentModel>("data/Game/Models/Player/Player.mv1")
         ->SetAnimation({
-            { "idle",  "data/Game/Models/Player/Anims/Idle.mv1", 1, 1.0f}, // Idle
-            { "walk",  "data/Game/Models/Player/Anims/Walk.mv1", 1, 1.0f}, // Jump
+            { "idle",  "data/Game/Models/Player/Anims/Idle.mv1", 0, 1.0f}, // Idle
+            { "walk",  "data/Game/Models/Player/Anims/Walk.mv1", 0, 1.0f}, // Jump
             {"throw", "data/Game/Models/Player/Anims/Throw.mv1", 1, 1.0f}  // Throw
     });
 
