@@ -1,12 +1,12 @@
 ﻿//---------------------------------------------------------------------------
-//!	@file	TutorialX_Player.cpp
-//! @brief	TutorialX_Player
+//!	@file	PoittersPoint_Player.cpp
+//! @brief	PoittersPoint_Player
 //---------------------------------------------------------------------------
 
-#include "TutorialX_Ground.h"
-#include "TutorialX.h"
+#include "Ground.h"
+#include "MainStage.h"
 
-namespace TutorialX {
+namespace PoittersPoint {
 //! @brief 初期化
 //! @return 初期化終了
 bool Ground::Init()
@@ -16,9 +16,11 @@ bool Ground::Init()
     SetName("Ground");
 
     //auto ground = Scene::Object::Create<Object>("Ground");
-    AddComponent<ComponentModel>("data/Sample/SwordBout/Stage/Stage.mv1");
+    auto   model = AddComponent<ComponentModel>("data/Game/Models/Stage/Stage2.mv1");
+    float3 size  = {2.0f, 2.0f, 2.0f};
+    SetScaleAxisXYZ(size);
     AddComponent<ComponentCollisionModel>()->AttachToModel();
 
     return true;
 }
-}    // namespace TutorialX
+}    // namespace PoittersPoint

@@ -6,7 +6,8 @@
 #include "TutorialX_GameOver.h"
 
 #include "Player.h"
-#include "TutorialX_Ground.h"
+#include "Ground.h"
+#include "Item.h"
 #include "MainCamera.h"
 #include "TutorialX_Enemy.h"
 
@@ -24,11 +25,13 @@ bool PoittersPoint_MainStage::Init()
     // 最初に1回動作する
     // ただし trueを返さなければ Initに何回も来る仕様。
 
-    Scene::Object::Create<TutorialX::Ground>();
+    Scene::Object::Create<Ground>();
 
     Scene::Object::Create<Player>();
 
     Scene::Object::Create<Camera>();
+
+    Scene::Object::Create<Item>();
 
     createEnemy();
 

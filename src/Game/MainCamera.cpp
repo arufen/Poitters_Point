@@ -17,7 +17,7 @@ bool Camera::Init()
 
     //auto camera = Scene::Object::Create<Object>("Camera");
     AddComponent<ComponentCamera>()    //
-        ->SetPositionAndTarget({0, 200, -160}, {0, 0, 0});
+        ->SetPositionAndTarget({0, 190, -310}, {0, 0, 0});
 
     return true;
 }
