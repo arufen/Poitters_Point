@@ -9,7 +9,7 @@ void ComponentPlayerState::Init()
 
     GetOwner()
         ->AddComponent<ComponentStateIdleWalk>()    //
-        ->SetMoveSpeed(1.0f)                        //
+        ->SetMoveSpeed(0.3f)                        //
         ->SetRotateSpeed(20.0f);
 }
 
