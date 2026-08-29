@@ -5,9 +5,9 @@
 #include "MainStage.h"
 #include "TutorialX_GameOver.h"
 
-#include "TutorialX_Player.h"
+#include "Player.h"
 #include "TutorialX_Ground.h"
-#include "TutorialX_Camera.h"
+#include "MainCamera.h"
 #include "TutorialX_Enemy.h"
 
 namespace PoittersPoint {
@@ -26,9 +26,9 @@ bool PoittersPoint_MainStage::Init()
 
     Scene::Object::Create<TutorialX::Ground>();
 
-    Scene::Object::Create<TutorialX::Player>();
+    Scene::Object::Create<Player>();
 
-    Scene::Object::Create<TutorialX::Camera>();
+    Scene::Object::Create<Camera>();
 
     createEnemy();
 

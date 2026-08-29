@@ -16,16 +16,16 @@ void ComponentStateIdleWalk::Update()
 
     // 移動方向
     float3 dir{0, 0, 0};
-    if(IsKey(key_up_))
+    if(IsKey(key_down_))
         dir += {0, 0, -1};
 
-    if(IsKey(key_down_))
+    if(IsKey(key_up_))
         dir += {0, 0, 1};
 
-    if(IsKey(key_right_))
+    if(IsKey(key_left_))
         dir += {-1, 0, 0};
 
-    if(IsKey(key_left_))
+    if(IsKey(key_right_))
         dir += {1, 0, 0};
 
     // 移動キーが押されているか?
