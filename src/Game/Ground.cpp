@@ -1,12 +1,12 @@
 ﻿//---------------------------------------------------------------------------
-//!	@file	TutorialX_Player.cpp
-//! @brief	TutorialX_Player
+//!	@file	PoittersPoint_Player.cpp
+//! @brief	PoittersPoint_Player
 //---------------------------------------------------------------------------
 
-#include "TutorialX_Ground.h"
-#include "TutorialX.h"
+#include "Ground.h"
+#include "MainStage.h"
 
-namespace TutorialX {
+namespace PoittersPoint {
 //! @brief 初期化
 //! @return 初期化終了
 bool Ground::Init()
@@ -21,4 +21,4 @@ bool Ground::Init()
 
     return true;
 }
-}    // namespace TutorialX
+}    // namespace PoittersPoint
