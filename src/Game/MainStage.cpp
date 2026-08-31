@@ -7,6 +7,8 @@
 
 #include "Player.h"
 #include "Ground.h"
+#include "Item.h"
+
 #include "MainCamera.h"
 #include "TutorialX_Enemy.h"
 
@@ -29,6 +31,8 @@ bool PoittersPoint_MainStage::Init()
     Scene::Object::Create<Player>();
 
     Scene::Object::Create<Camera>();
+
+    Scene::Object::Create<Item>();
 
     createEnemy();
 

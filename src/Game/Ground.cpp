@@ -16,7 +16,9 @@ bool Ground::Init()
     SetName("Ground");
 
     //auto ground = Scene::Object::Create<Object>("Ground");
-    AddComponent<ComponentModel>("data/Sample/SwordBout/Stage/Stage.mv1");
+    auto   model = AddComponent<ComponentModel>("data/Game/Models/Stage/Stage2.mv1");
+    float3 size  = {2.0f, 2.0f, 2.0f};
+    SetScaleAxisXYZ(size);
     AddComponent<ComponentCollisionModel>()->AttachToModel();
 
     return true;
