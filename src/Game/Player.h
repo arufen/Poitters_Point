@@ -17,7 +17,12 @@ public:
 
     void Update() override;
 
+    void PostDraw() override;
+
 private:
     float speed_ = 2.0f;
+
+    //UI
+    int UI_key_e;
 };
 }    // namespace PoittersPoint

@@ -6,6 +6,7 @@
 #include "Item.h"
 #include "MainStage.h"
 #include <System/Component/ComponentCollisionBox.h>
+#include "Component/ComponentItemPickUp.h"
 
 namespace PoittersPoint {
 //! @brief 初期化
@@ -29,6 +30,11 @@ bool Item::Init()
     //Position
     float3 pos = {0.0f, 50.0f, 0.0f};
     SetTranslate(pos);
+    float3 size = {0.5f, 0.5f, 0.5f};
+    SetScaleAxisXYZ(size);
+
+    //Component
+    AddComponent<ComponentItemPickUp>();
 
     return true;
 }
