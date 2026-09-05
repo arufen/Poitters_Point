@@ -37,7 +37,7 @@ void ComponentStateThrow::Update()
     if(auto bullet = bullet_.lock()) {
         auto model     = GetOwner()->GetComponent<ComponentModel>();
         auto anim_time = model->GetAnimationTime();
-        if(anim_time >= 1.2f) {
+        if(anim_time >= 1.7f) {
             if(auto attach = bullet->GetComponent<ComponentAttachModel>()) {
                 bullet->RemoveComponent(attach);
                 //bullet->AddComponent<ComponentCollisionSphere>();
