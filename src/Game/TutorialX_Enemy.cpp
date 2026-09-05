@@ -6,6 +6,9 @@
 #include "TutorialX_Enemy.h"
 #include "TutorialX.h"
 
+#include <Game/Component/ComponentEnemyAI.h>
+#include <Game/Component/ComponentEnemyController.h>
+
 namespace TutorialX {
 //int randomRange(int start, int end)
 //{
@@ -38,6 +41,9 @@ bool Enemy::Init()
         ->SetCollisionGroup(ComponentCollision::CollisionGroup::ENEMY)
         ->UseGravity();
 
+    AddComponent<ComponentEnemyController>();
+    AddComponent<ComponentEnemyAI>();
+
     return true;
 }
 
@@ -49,15 +55,15 @@ void Enemy::Update()
         //-------------------------------------------------------------------------------
         // 敵の方向をプレイヤーのほうに向ける　④
         //-------------------------------------------------------------------------------
-        auto player = Scene::Object::Get<Object>("Player");
+        //auto player = Scene::Object::Get<Object>("Player");
 
-        // プレイヤーが存在している時のみ
-        if(player) {
-            // プレイヤーの方向に、敵の向きを最大3度回転させます
-            SetRotationToPositionWithLimit(player->GetTranslate(), 3.0f);
+        //// プレイヤーが存在している時のみ
+        //if(player) {
+        //    // プレイヤーの方向に、敵の向きを最大3度回転させます
+        //    SetRotationToPositionWithLimit(player->GetTranslate(), 3.0f);
 
-            AddTranslate({0, 0, -0.1}, true);
-        }
+        //    AddTranslate({0, 0, -0.1}, true);
+        //}
         //-------------------------------------------------------------------------------
     }
 }
@@ -79,6 +85,13 @@ void Enemy::OnHit(const ComponentCollision::HitInfo& hit_info)
             //if(auto col = GetComponent<ComponentCollisionCapsule>())
             //	RemoveComponent(col);
             RemoveComponent<ComponentCollisionCapsule>();
+
+            // Disable AI and Controller upon death
+            if(auto ai = GetComponent<ComponentEnemyAI>())
+                ai->SetStatus(Component::StatusBit::Enable, false);
+
+            if(auto controller = GetComponent<ComponentEnemyController>())
+                controller->SetStatus(Component::StatusBit::Enable, false);
         }
         is_dead_ = true;
 

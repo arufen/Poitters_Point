@@ -19,12 +19,12 @@ void ComponentPlayerState::Update()
 
     auto owner = GetOwner();
 
-    if(Input::IsKeyDown(KEY_INPUT_SPACE)) {
+    /*if(Input::IsKeyDown(KEY_INPUT_SPACE)) {
         if(!owner->GetComponent<ComponentStateThrow>()) {
             owner->RemoveComponent<ComponentStateIdleWalk>();
             owner->AddComponent<ComponentStateThrow>();
         }
-    }
+    }*/
 }
 
 void ComponentPlayerState::GUI()
