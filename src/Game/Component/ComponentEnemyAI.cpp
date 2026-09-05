@@ -7,7 +7,7 @@ void ComponentEnemyAI::Init()
     current_state_ = AIState::Idle;
 }
 
-ObjectPtr ComponentEnemyAI::FindNearestProp()
+ObjectPtr ComponentEnemyAI::FindNearestItem()
 {
     auto   owner  = GetOwner();
     float3 my_pos = owner->GetTranslate();
@@ -87,7 +87,7 @@ void ComponentEnemyAI::Update()
                 break;
             }
 
-            if(auto prop = FindNearestProp()) {
+            if(auto prop = FindNearestItem()) {
                 target_prop_   = prop;
                 current_state_ = AIState::SeekProp;
             }

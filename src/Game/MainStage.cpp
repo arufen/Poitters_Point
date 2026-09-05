@@ -25,16 +25,24 @@ bool PoittersPoint_MainStage::Init()
 {
     // 最初に1回動作する
     // ただし trueを返さなければ Initに何回も来る仕様。
-
     Scene::Object::Create<Ground>();
 
     Scene::Object::Create<Player>();
 
     Scene::Object::Create<Camera>();
 
-    Scene::Object::Create<Item>();
-
     createEnemy();
+
+    // Create a dedicated scene Object to attach the component to
+    auto spawner_obj = Scene::Object::Create<Object>("ItemSpawnerObject");
+    if(spawner_obj) {
+        item_spawner_ = spawner_obj->AddComponent<ComponentItemSpawner>();
+    }
+
+    // Spawn a random item when the stage starts
+    if(item_spawner_) {
+        item_spawner_->SpawnItemAtRandomPosition();
+    }
 
     return true;
 }

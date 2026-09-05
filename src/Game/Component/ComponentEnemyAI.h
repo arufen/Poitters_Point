@@ -24,7 +24,7 @@ public:
     void GUI() override;
 
 private:
-    ObjectPtr FindNearestProp();
+    ObjectPtr FindNearestItem();
     ObjectPtr FindNearestPlayer();
 
     AIState current_state_ = AIState::Idle;

@@ -3,6 +3,7 @@
 //! @brief	MainStage
 //---------------------------------------------------------------------------
 #include <System/Scene.h>
+#include "Game/Component/ComponentItemSpawner.h"
 
 namespace PoittersPoint {
 
@@ -25,6 +26,8 @@ private:
     void createEnemy();
 
     int enemy_dead_count_ = 0;
+
+    ComponentItemSpawnerPtr item_spawner_ = nullptr;
 };
 
 }    // namespace PoittersPoint
