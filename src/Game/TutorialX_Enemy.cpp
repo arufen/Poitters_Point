@@ -21,11 +21,13 @@ bool Enemy::Init()
     SetName("Enemy");
 
     //auto Enemy = Scene::Object::Create<Object>("Enemy");
-    auto model = AddComponent<ComponentModel>("data/Game/Models/Enemy/Enemy.mv1");
+    auto model = AddComponent<ComponentModel>("data/Game/Models/Enemy/POLICE/Police.mv1");
     model->SetAnimation({
-        {"idle",  "data/Game/Models/Enemy/Anims/Idle.mv1", 1, 1.0f}, // Idle
-        {"walk",  "data/Game/Models/Enemy/Anims/Walk.mv1", 1, 1.0f}, // Walk
-        {"dead", "data/Game/Models/Enemy/Anims/Death.mv1", 1, 1.0f}, // Dead
+        {  "idle",    "data/Game/Models/Enemy/POLICE/Anims/Idle.mv1", 0, 1.0f}, // Idle
+        {  "walk", "data/Game/Models/Enemy/POLICE/Anims/Walking.mv1", 0, 1.0f}, // Walk
+        {   "run", "data/Game/Models/Enemy/POLICE/Anims/Running.mv1", 0, 1.0f}, // Walk
+        {"snatch",  "data/Game/Models/Enemy/POLICE/Anims/Snatch.mv1", 0, 1.0f}, // Walk
+        {  "dead",   "data/Game/Models/Enemy/POLICE/Anims/Death.mv1", 0, 1.0f}, // Dead
     });
     model->PlayAnimationNoSame("walk", true);
 
