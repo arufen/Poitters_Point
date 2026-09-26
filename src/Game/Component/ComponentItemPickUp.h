@@ -34,8 +34,12 @@ private:
     bool    isGround_ = false;                 //!< true once the item's collision has actually touched the ground
     float3  velocity_ = {0.0f, 0.0f, 0.0f};    //!< current speed/direction while thrown
     Object* holder_;
-    float   throwSpeed_ = 700.0f;
+    float   throwSpeed_ = 100.0f;
     float   upBoost_    = 20.0f;
+
+    // while > 0, ignore OnLanded() calls - stops the item from instantly
+    // "landing" from a stale sweep check right when it's thrown
+    float throwGraceTimer_ = 0.0f;
 
     // stops the item once isGround_ has been set by OnLanded()
     void CheckGround();

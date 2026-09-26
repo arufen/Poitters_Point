@@ -6,7 +6,7 @@ void ComponentItemPickUp::Init()
 {
     Super::Init();
     isHeld_   = false;
-    isThrown_ = false;
+    isThrown_ = false;    // was accidentally set to true - item started "in flight" on spawn
     isGround_ = false;
     velocity_ = {0.0f, 0.0f, 0.0f};
 }
@@ -14,6 +14,11 @@ void ComponentItemPickUp::Init()
 void ComponentItemPickUp::Update()
 {
     Super::Update();
+
+    // tick down the grace period after a throw - while this is > 0,
+    // OnLanded() calls are ignored (see below)
+    if(throwGraceTimer_ > 0.0f)
+        throwGraceTimer_ -= GetDeltaTime();
 
     // while the item is flying, only move it sideways (x/z) ourselves.
     // y is left alone on purpose - the collision's UseGravity(true) already
@@ -46,8 +51,11 @@ void ComponentItemPickUp::CheckGround()
 
 void ComponentItemPickUp::OnLanded()
 {
-    float3 pos = GetOwner()->GetTranslate();
-    printfDx("OnLanded! pos: %.2f, %.2f, %.2f\n", pos.x, pos.y, pos.z);
+    // ignore landing if we *just* threw it - stops a stale sweep-check
+    // right at throw time from instantly counting as "landed"
+    if(throwGraceTimer_ > 0.0f)
+        return;
+
     isGround_ = true;
 }
 
@@ -114,8 +122,6 @@ void ComponentItemPickUp::OnThrow()
     currentPos.y       += throwOffset;
     owner->SetTranslate(currentPos);
 
-    printfDx("after move up, pos: %f, %.2f, %.2f\n", currentPos.x, currentPos.y, currentPos.z);
-
     // NOW turn collision back on, so it starts checking from the safe, new position
     if(auto col = GetOwner()->GetComponent<ComponentCollision>())
         col->SetStatus(Component::StatusBit::Enable, true);
@@ -123,6 +129,10 @@ void ComponentItemPickUp::OnThrow()
     velocity_    = direction * throwSpeed_;
     velocity_.y += upBoost_;
     isThrown_    = true;
+
+    // give it a short window where landings are ignored, so a stale
+    // sweep-check from the teleport above doesn't count as "landed"
+    throwGraceTimer_ = 0.2f;
 
     holder_ = nullptr;
 }
