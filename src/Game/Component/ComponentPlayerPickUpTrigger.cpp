@@ -21,7 +21,7 @@ void ComponentPlayerPickUpTrigger::ThrowItem()
 {
     if(auto item = heldItem_.lock()) {
         if(auto pickup = item->GetComponent<ComponentItemPickUp>())
-            pickup->OnThrown();
+            pickup->OnThrow();
     }
 
     heldItem_.reset();

@@ -31,7 +31,7 @@ public:
 
 private:
     // how close player needs to be to auto-pick-up an item
-    float pickupRange_ = 15.0f;
+    float pickupRange_ = 20.0f;
 
     // the item this player is currently holding, if any
     PoittersPoint::ItemWeakPtr heldItem_;

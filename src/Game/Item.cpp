@@ -20,10 +20,12 @@ bool Item::Init()
     //auto Item = Scene::Object::Create<Object>("Item");
     auto model = AddComponent<ComponentModel>("data/Game/Models/Test/Box2.mv1");
 
-    //Collision
-    auto   collision = AddComponent<ComponentCollisionBox>();
-    float3 colSize   = {10.0f, 10.0f, 10.0f};
-    collision->SetSize(colSize);
+    //Collision (use capsule due to bug of using CollissionBox)
+    // //コリジョン（CollisionBoxのバグのためカプセルを使用）
+    auto collision = AddComponent<ComponentCollisionCapsule>();
+    collision->SetHeight(26.0f);
+    collision->SetRadius(10.0f);
+    collision->SetTranslate(float3(0.0f, -10.0f, 0.0f));
     collision->UseGravity(true);
     collision->SetCollisionGroup(ComponentCollision::CollisionGroup::ENEMY);
 
@@ -37,5 +39,19 @@ bool Item::Init()
     AddComponent<ComponentItemPickUp>();
 
     return true;
+}
+
+// 当たり判定が行われたときに呼ばれる関数
+void Item::OnHit(const ComponentCollision::HitInfo& hit_info)
+{
+    auto name = hit_info.hit_collision_->GetOwner()->GetNameDefault();
+    if(name == "Ground") {
+        // tell the pickup component it landed, so it can stop moving
+        if(auto pickup = GetComponent<ComponentItemPickUp>())
+            pickup->OnLanded();
+    }
+
+    // 最後にこれを入れてください。ここでめり込みの解消を行っています。
+    Super::OnHit(hit_info);
 }
 }    // namespace PoittersPoint

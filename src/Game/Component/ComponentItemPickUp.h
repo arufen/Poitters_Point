@@ -18,14 +18,27 @@ public:
     // Player calls this when it touches the item
     void OnPickedUp(Object* holder);
 
+    void ResetRotation();
+
     // Called when player throws this item away
-    void OnThrown();
+    void OnThrow();
+
+    // Item (the Object) calls this from its OnHit() when it collides with "Ground"
+    void OnLanded();
 
     bool IsHeld() const { return isHeld_; }
 
 private:
-    bool    isHeld_ = false;
+    bool    isHeld_   = false;
+    bool    isThrown_ = false;                 //!< true while the item is flying through the air
+    bool    isGround_ = false;                 //!< true once the item's collision has actually touched the ground
+    float3  velocity_ = {0.0f, 0.0f, 0.0f};    //!< current speed/direction while thrown
     Object* holder_;
+    float   throwSpeed_ = 700.0f;
+    float   upBoost_    = 20.0f;
+
+    // stops the item once isGround_ has been set by OnLanded()
+    void CheckGround();
 
     //--------------------------------------------------------------------
     //! @name Cereal処理
