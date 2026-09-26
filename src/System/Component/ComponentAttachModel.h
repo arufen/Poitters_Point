@@ -54,6 +54,10 @@ private:
     ObjectWeakPtr object_;
     std::string   object_name_{};
 
+    // this object's own scale, saved at Init time so PostUpdate can
+    // reapply it every frame instead of inheriting the target bone's scale
+    float3 keep_scale_{1.0f, 1.0f, 1.0f};
+
     int         object_node_index_ = 0;
     std::string object_node_name_{};
 

@@ -14,5 +14,8 @@ public:
     //! @brief 初期化
     //! @return 初期化終了
     bool Init() override;
+
+    // 当たり判定が行われたときに呼ばれる関数
+    void OnHit(const ComponentCollision::HitInfo& hit_info) override;
 };
 }    // namespace PoittersPoint
