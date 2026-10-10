@@ -1,5 +1,4 @@
 ﻿#pragma once
-#include "Game/Component/ComponentStateThrow.h"
 #include "Game/Component/ComponentStateIdleWalk.h"
 #include "Game/Component/ComponentPlayerState.h"
 
@@ -9,7 +8,7 @@ void ComponentPlayerState::Init()
 
     GetOwner()
         ->AddComponent<ComponentStateIdleWalk>()    //
-        ->SetMoveSpeed(0.3f)                        //
+        ->SetMoveSpeed(1.0f)                        //
         ->SetRotateSpeed(20.0f);
 }
 
@@ -18,13 +17,6 @@ void ComponentPlayerState::Update()
     Super::Update();
 
     auto owner = GetOwner();
-
-    if(Input::IsKeyDown(KEY_INPUT_SPACE)) {
-        if(!owner->GetComponent<ComponentStateThrow>()) {
-            owner->RemoveComponent<ComponentStateIdleWalk>();
-            owner->AddComponent<ComponentStateThrow>();
-        }
-    }
 }
 
 void ComponentPlayerState::GUI()

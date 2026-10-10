@@ -5,7 +5,6 @@
 
 #include "Item.h"
 #include "MainStage.h"
-#include <System/Component/ComponentCollisionBox.h>
 #include "Component/ComponentItemPickUp.h"
 
 namespace PoittersPoint {
