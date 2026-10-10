@@ -6,6 +6,7 @@
 //#include "TutorialX_GameOver.h"
 
 #include "Player.h"
+#include "Npc.h"
 #include "Ground.h"
 #include "Item.h"
 
@@ -24,6 +25,7 @@ bool PoittersPoint_MainStage::Init()
     Scene::Object::Create<Ground>();
 
     Scene::Object::Create<Player>();
+    Scene::Object::Create<Npc>();
 
     Scene::Object::Create<Camera>();
 
