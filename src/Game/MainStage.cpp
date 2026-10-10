@@ -34,15 +34,13 @@ bool PoittersPoint_MainStage::Init()
 
     Scene::Object::Create<Item>();
 
-    createEnemy();
+    //createEnemy();
 
     return true;
 }
 
 void PoittersPoint_MainStage::Update()
 {
-    printfDx("\nDEAD ENEMY: %d", enemy_dead_count_);
-
     if(enemy_dead_count_ >= MAX_ENEMIES) {
         //createEnemy();
         Scene::Change(Scene::GetScene<TutorialX::TutorialX_GameOver>());

@@ -18,6 +18,11 @@ void ComponentAttachModel::Init()
     SetAttachModelStatus(AttachModelBit::Initialized, true);
 
     SetStatus(::Component::StatusBit::DisablePause, true);
+
+    // remember this object's own scale before PostUpdate starts overwriting
+    // the full matrix every frame (position/rotation/scale all at once)
+    if(auto owner = GetOwner())
+        keep_scale_ = owner->GetScaleAxisXYZ();
 }
 
 //---------------------------------------------------------
@@ -74,6 +79,14 @@ matrix ComponentAttachModel::GetPutOnMatrix() const
             int  no        = target_model->GetNodeIndex(object_node_name_);
             if(no >= 0) {
                 mat = target_model->GetNodeMatrix(no);
+
+                // bone matrices carry scale from the rig (e.g. Mixamo import scale).
+                // strip it out and use this object's own scale instead of
+                // inheriting the bone's.
+                float t[3], r[3], s[3];
+                DecomposeMatrixToComponents(mat.f32_128_0, t, r, s);
+                float own_scale[3] = {keep_scale_.x, keep_scale_.y, keep_scale_.z};
+                RecomposeMatrixFromComponents(t, r, own_scale, mat.f32_128_0);
             }
         }
     }

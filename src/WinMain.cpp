@@ -145,7 +145,7 @@ int WINAPI WinMain(_In_ [[maybe_unused]] HINSTANCE     hInstance,
         ClearColor(GetBackBuffer(), float4(0.5, 0.5f, 0.5f, 0.0f));
         ClearDepth(GetDepthStencil(), 1.0f);
 
-        clsDx();
+        //clsDx();
 
         InputKeyUpdate();
         InputPadUpdate();

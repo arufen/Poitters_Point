@@ -39,7 +39,8 @@ void SceneEaseCurve::Draw()
 {
     // Easeカーブ名
     static const char* easeName[]{
-        "InSine",      "OutSine",      "InOutSine", "InQuad",     "OutQuad",    //
+        "InSine",      "OutSine",      "InOutSine", "InQuad",
+        "OutQuad",    //
         "InOutQuad",   "InCubic",      "OutCubic",  "InOutCubic",
         "InQuart",    //
         "OutQuart",    "InOutQuart",   "InQuint",   "OutQuint",
