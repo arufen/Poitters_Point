@@ -40,6 +40,7 @@ void ComponentPlayerPickUpTrigger::PickUpItem()
         if(dist <= pickupRange_) {
             pickup->OnPickedUp(GetOwner());
             heldItem_ = item;
+
             break;    // only grab one item per frame
         }
     }

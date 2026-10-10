@@ -6,26 +6,38 @@ void ComponentItemPickUp::Init()
 {
     Super::Init();
     isHeld_   = false;
-    isThrown_ = false;
+    isThrown_ = false;    //Item must not start in flight(アイテムは最初から飛んでいてはいけない)
     isGround_ = false;
     velocity_ = {0.0f, 0.0f, 0.0f};
+    holder_   = nullptr;
 }
 
 void ComponentItemPickUp::Update()
 {
     Super::Update();
 
-    // while the item is flying, only move it sideways (x/z) ourselves.
-    // y is left alone on purpose - the collision's UseGravity(true) already
-    // pulls it down and resolves ground overlap. Moving y ourselves too
-    // caused two systems to fight over position (item would freeze then sink).
+    //Count down the grace timer after throwing to avoid an instant landing(投げた直後に着地扱いになるのを避けるためタイマーを減らす)
+    if(throwGraceTimer_ > 0.0f && isThrown_)
+        throwGraceTimer_ -= GetDeltaTime();
+
     if(isThrown_) {
         float delta = GetDeltaTime();
 
-        float3 pos  = GetOwner()->GetTranslate();
-        pos.x      += velocity_.x * delta;
-        pos.z      += velocity_.z * delta;
+        velocity_.y -= gravity_ * delta;    //Gravity pulls the item down(重力でアイテムを下に引っ張る)
+
+        float3 pos = GetOwner()->GetTranslate();
+
+        //Right after the throw, collision may push the item to the ground, so use our own position(投げた直後は当たり判定が地面に押し戻すことがあるので、自分の位置を使う)
+        if(throwGraceTimer_ > 0.0f)
+            pos = throwPos_;
+
+        pos.x += velocity_.x * delta;
+        pos.y += velocity_.y * delta;
+        pos.z += velocity_.z * delta;
         GetOwner()->SetTranslate(pos);
+
+        //Remember the position for the next frame(次のフレームのために位置を覚える)
+        throwPos_ = pos;
 
         CheckGround();
     }
@@ -36,8 +48,7 @@ void ComponentItemPickUp::Update()
 
 void ComponentItemPickUp::CheckGround()
 {
-    // isGround_ gets set to true by OnLanded(), which Item::OnHit() calls
-    // when this item's collision actually touches the "Ground" object
+    //isGround_ is set by OnLanded(), which Item::OnHit() calls when touching the ground(isGround_はItem::OnHit()から呼ばれるOnLanded()で設定される)
     if(isGround_) {
         isThrown_ = false;
         velocity_ = {0.0f, 0.0f, 0.0f};
@@ -46,35 +57,39 @@ void ComponentItemPickUp::CheckGround()
 
 void ComponentItemPickUp::OnLanded()
 {
-    float3 pos = GetOwner()->GetTranslate();
-    printfDx("OnLanded! pos: %.2f, %.2f, %.2f\n", pos.x, pos.y, pos.z);
+    //Ignore landing right after the throw(投げた直後の着地判定は無視する)
+    if(throwGraceTimer_ > 0.0f)
+        return;
+
     isGround_ = true;
 }
 
 void ComponentItemPickUp::OnPickedUp(Object* holder)
 {
     if(isHeld_)
-        return;    // already held, don't pick up twice
+        return;    //Already held, do not pick up twice(すでに持たれているので二重に拾わない)
 
     isHeld_   = true;
-    isThrown_ = false;    // just in case it was still flying when picked up
+    isThrown_ = false;    //In case it was still flying(まだ飛んでいた場合に備えて)
 
-    // turn off this item's own collision so it stops blocking the player
+    //Turn off the item's own collision so it does not block the player(プレイヤーの邪魔にならないようアイテムの当たり判定を切る)
     if(auto col = GetOwner()->GetComponent<ComponentCollision>())
         col->SetStatus(Component::StatusBit::Enable, false);
 
-    //Size reset
+    //Reset size(サイズをリセット)
     float3 defaultSize = GetOwner()->GetScaleAxisXYZ();
 
-    // attach itself to the holder's hand
+    //Attach the item to the holder's hand(アイテムを持ち主の手にくっつける)
     auto attach = GetOwner()->AddComponent<ComponentAttachModel>();
     attach->SetAttachObject(holder->GetName(), "Arm:Right:Lower_end_end");
     //attach->SetAttachOffset({12, 17, 0});
 
     GetOwner()->SetScaleAxisXYZ(defaultSize);
 
-    // remember who's holding us, so we know which way to throw later
+    //Remember the holder to know the throw direction later(あとで投げる方向を知るため持ち主を覚える)
     holder_ = holder;
+
+    throwGraceTimer_ = 0.2f;
 }
 
 void ComponentItemPickUp::ResetRotation()
@@ -90,39 +105,53 @@ void ComponentItemPickUp::OnThrow()
 
     isHeld_ = false;
 
-    // figure out which way the player is facing, same way ComponentStateThrow does it
-    float3 direction = {0.0f, 0.0f, 1.0f};    // fallback if we can't find a model
+    //Get the direction the player is facing, same as ComponentStateThrow(プレイヤーの向きを取得する。ComponentStateThrowと同じ方法)
+    float3 direction = {0.0f, 0.0f, 1.0f};    //Fallback if no model is found(モデルが見つからない場合の予備)
 
     if(holder_) {
         if(auto model = holder_->GetComponent<ComponentModel>())
             direction = normalize(-model->GetWorldVectorAxisZ());
     }
 
-    // detach from the hand
+    //Detach from the hand(手から外す)
     GetOwner()->RemoveComponent<ComponentAttachModel>();
 
-    //Reset rot
+    //Reset rotation(回転をリセット)
     ResetRotation();
 
-    // about to fly again, so it's not touching ground anymore
+    //It is flying again, so not on the ground(また飛ぶので地面には触れていない)
     isGround_ = false;
 
-    // move it up FIRST, before turning collision back on
-    auto   owner        = GetOwner();
-    float  throwOffset  = 30.0f;
-    float3 currentPos   = owner->GetTranslate();
-    currentPos.y       += throwOffset;
-    owner->SetTranslate(currentPos);
+    //Start position comes from the PLAYER, not the item. The item's position can be stale while attached(開始位置はアイテムではなくプレイヤーから決める。アイテムの位置は手にくっついている間は古いことがある)
+    auto   owner = GetOwner();
+    float3 startPos;
 
-    printfDx("after move up, pos: %f, %.2f, %.2f\n", currentPos.x, currentPos.y, currentPos.z);
+    if(holder_) {
+        startPos    = holder_->GetTranslate();                 //Player position(プレイヤーの位置)
+        startPos    = startPos + direction * throwForward_;    //A bit in front of the player(プレイヤーの少し前)
+        startPos.y += throwHeight_;                            //Lift up from the feet(足元から上に上げる)
+    }
+    else {
+        //No holder, use the old way with the item position(持ち主がいないので、アイテムの位置を使う従来の方法にする)
+        startPos    = owner->GetTranslate();
+        startPos.y += throwHeight_;
+    }
 
-    // NOW turn collision back on, so it starts checking from the safe, new position
+    owner->SetTranslate(startPos);
+
+    //Remember the start position as our own position(開始位置を自分の位置として覚える)
+    throwPos_ = startPos;
+
+    //Turn collision back on from the new safe position(新しい安全な位置から当たり判定を戻す)
     if(auto col = GetOwner()->GetComponent<ComponentCollision>())
         col->SetStatus(Component::StatusBit::Enable, true);
 
     velocity_    = direction * throwSpeed_;
     velocity_.y += upBoost_;
     isThrown_    = true;
+
+    //Short window where landings are ignored(着地を無視する短い猶予時間)
+    throwGraceTimer_ = 0.2f;
 
     holder_ = nullptr;
 }
@@ -131,26 +160,29 @@ void ComponentItemPickUp::GUI()
 {
     __super::GUI();
 
-    // GUI内に出現させる
+    //Show inside the GUI(GUI内に出現させる)
     ImGui::Begin(GetOwner()->GetName().data());
     {
         ImGui::Separator();
         if(ImGui::TreeNode("PickupAbleItem")) {
-            // 有効/無効
+            //Enable / disable(有効/無効)
             bool enable = GetStatus(StatusBit::Enable);
             if(ImGui::Checkbox(u8"有効", &enable))
                 SetStatus(StatusBit::Enable, enable);
 
             ImGui::Text(isHeld_ ? "Held" : (isThrown_ ? "Thrown" : "On ground"));
 
-            // 移動の基本情報
+            //Basic movement info(移動の基本情報)
             ImGui::DragFloat(u8"投げるの速さ", &throwSpeed_, 0.1f);
             ImGui::DragFloat(u8"上の投げる速さ", &upBoost_, 0.1f);
+            ImGui::DragFloat(u8"重力", &gravity_, 0.1f);
+            ImGui::DragFloat(u8"投げ始めの高さ", &throwHeight_, 0.1f);
+            ImGui::DragFloat(u8"投げ始めの前方", &throwForward_, 0.1f);
             float vel[3] = {velocity_.x, velocity_.y, velocity_.z};
             if(ImGui::DragFloat3(u8"速度", vel, 0.1f))
                 velocity_ = {vel[0], vel[1], vel[2]};
 
-            // GUI上でオーナーから自分(SampleObjectController)を削除します
+            //Remove this component from the owner in the GUI(GUI上でオーナーからこのコンポーネントを削除する)
             if(ImGui::Button(u8"削除"))
                 GetOwner()->RemoveComponent(shared_from_this());
 

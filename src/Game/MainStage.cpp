@@ -3,21 +3,16 @@
 //! @brief	MainStage
 //---------------------------------------------------------------------------
 #include "MainStage.h"
-#include "TutorialX_GameOver.h"
+//#include "TutorialX_GameOver.h"
 
 #include "Player.h"
 #include "Ground.h"
 #include "Item.h"
 
 #include "MainCamera.h"
-#include "TutorialX_Enemy.h"
+//#include "TutorialX_Enemy.h"
 
 namespace PoittersPoint {
-
-void PoittersPoint_MainStage::createEnemy()
-{
-    for(int i = 0; i < MAX_ENEMIES; i++) Scene::Object::Create<TutorialX::Enemy>();
-}
 
 //! @brief 初期化
 //! @return 初期化済み
@@ -41,17 +36,6 @@ bool PoittersPoint_MainStage::Init()
 
 void PoittersPoint_MainStage::Update()
 {
-    if(enemy_dead_count_ >= MAX_ENEMIES) {
-        //createEnemy();
-        Scene::Change(Scene::GetScene<TutorialX::TutorialX_GameOver>());
-
-        enemy_dead_count_ = 0;
-    }
-}
-
-void PoittersPoint_MainStage::AddDeadEnemy()
-{
-    enemy_dead_count_++;
 }
 
 }    // namespace PoittersPoint

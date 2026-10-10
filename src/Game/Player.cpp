@@ -5,7 +5,6 @@
 
 #include "Player.h"
 #include "MainStage.h"
-#include "Component/ComponentStateIdleWalk.h"
 #include "Component/ComponentCameraController.h"
 #include "Component/ComponentPlayerState.h"
 #include "Component/ComponentPlayerPickUpTrigger.h"
@@ -23,7 +22,7 @@ bool Player::Init()
     AddComponent<ComponentModel>("data/Game/Models/Player/Salaryman.mv1")
         ->SetAnimation({
             { "idle",          "data/Game/Models/Player/Anims/Idle.mv1", 0, 1.0f}, // Idle
-            { "walk",       "data/Game/Models/Player/Anims/Walking.mv1", 0, 1.0f}, // Jump
+            { "walk",       "data/Game/Models/Player/Anims/Walking.mv1", 0, 3.3f}, // Jump
             {"throw", "data/Game/Models/Player/Anims/Carry_Walking.mv1", 1, 1.0f}  // Throw
     });
 
