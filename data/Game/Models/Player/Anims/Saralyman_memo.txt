@@ -1,11 +1,13 @@
+=========================================================================================
 mixamo Animation
+=========================================================================================
+<ファイル名>.mv1	アニメーションの説明
 
-Carry_Walking
-Carrying_Left
-Carrying_Right
-Idle
-Jogging With Box
-Running
-Snatch
-Walking
+Carry_Walking		持ちながら前にゆっくり歩く
+Carrying_Left		持ちながら止まりつつ左に向く
+Carrying_Right		持ちながら止まりつつ右に向く
+Idle			立ち止まった状態(構え)
+Jogging With Box	持ちながら前に走る
+Snatch			持ち上げながら投げる
+Walking			歩き
 
