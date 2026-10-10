@@ -1,0 +1,11 @@
+mixamo Animation
+
+Carry_Walking
+Carrying_Left
+Carrying_Right
+Idle
+Jogging With Box
+Running
+Snatch
+Walking
+
