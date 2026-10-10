@@ -19,12 +19,7 @@ public:
 
     void Update() override;
 
-    void AddDeadEnemy();
-
 private:
-    void createEnemy();
-
-    int enemy_dead_count_ = 0;
 };
 
 }    // namespace PoittersPoint
