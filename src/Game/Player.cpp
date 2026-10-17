@@ -19,12 +19,15 @@ bool Player::Init()
 
     SetName("Player");
 
-    //auto player = Scene::Object::Create<Object>("Player");
+    auto player = Scene::Object::Create<Object>("Player");
     AddComponent<ComponentModel>("data/Game/Models/Player/Salaryman.mv1")
         ->SetAnimation({
-            { "idle",    "data/Game/Models/Player/Anims/Idle.mv1", 0, 1.0f}, // Idle
-            { "walk", "data/Game/Models/Player/Anims/Walking.mv1", 0, 1.0f}, // Jump
-            {"throw",  "data/Game/Models/Player/Anims/Snatch.mv1", 0, 1.0f}  // Throw
+            {       "idle",           "data/Game/Models/Player/Anims/Idle.mv1", 0, 1.0f}, // Idle(mixamo)
+            {       "walk",        "data/Game/Models/Player/Anims/Walking.mv1", 0, 1.0f}, // Walk(mixamo)
+            {"Carry_start", "data/Game/Models/Player/OR_Anims/Carry_start.mv1", 4, 1.0f}, // Throw
+            {       "lift",        "data/Game/Models/Player/OR_Anims/lift.mv1", 4, 1.0f}, // Idle
+            { "Cally_walk",  "data/Game/Models/Player/OR_Anims/Cally_walk.mv1", 4, 1.0f}, // Jump
+            {"Cally_throw", "data/Game/Models/Player/OR_Anims/Carry_Throw.mv1", 4, 1.0f}, // Throw
     });
 
     SetTranslate({0, 5, 0});
