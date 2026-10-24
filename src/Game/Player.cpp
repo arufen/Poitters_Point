@@ -11,8 +11,8 @@
 #include <cstring>
 
 namespace PoittersPoint {
-//! @brief 初期化
-//! @return 初期化終了
+//! @brief 初期化 / Initialize
+//! @return 初期化終了 / Initialization finished
 bool Player::Init()
 {
     Super::Init();
@@ -23,11 +23,16 @@ bool Player::Init()
     AddComponent<ComponentModel>("data/Game/Models/Player/Salaryman.mv1")
         ->SetAnimation({
             { "idle",          "data/Game/Models/Player/Anims/Idle.mv1", 0, 1.0f}, // Idle
-            { "walk",       "data/Game/Models/Player/Anims/Walking.mv1", 0, 3.3f}, // Jump
-            {"throw", "data/Game/Models/Player/Anims/Carry_Walking.mv1", 1, 1.0f}  // Throw
+            { "walk",       "data/Game/Models/Player/Anims/Walking.mv1", 0, 3.3f}, // Walk
+            {"throw", "data/Game/Models/Player/Anims/Carry_Walking.mv1", 1, 1.0f}  // Throw/Carry related
     });
 
     SetTranslate({0, 5, 0});
+
+    // Add player stats (ポイッターズポイント風ステータス) / Add stats
+    hp_       = 10 + (GetRand(10));            // HP around 10-20 / HPは10〜20程度
+    strength_ = 0.8f + (GetRand(5) * 0.1f);    // random strength / ランダムな筋力
+    speed_    = 2.0f;
 
     AddComponent<ComponentPlayerState>();
 
@@ -63,6 +68,26 @@ void Player::Update()
             }
         }
     }
+}
+
+void Player::TakeDamage(int dmg)
+{
+    // Damage handling for Poitters Point style HP / ダメージ処理
+    hp_ -= dmg;
+    if(hp_ < 0)
+        hp_ = 0;
+}
+
+bool Player::CanLiftHeavy(float itemWeight) const
+{
+    // The stronger they are, the easier they can lift heavy items / 強いほど重いアイテムを持ちやすい
+    // Simple threshold based on strength / 筋力に基づく閾値
+    if(itemWeight <= 1.0f)
+        return true;
+    if(itemWeight <= 2.0f)
+        return strength_ >= 0.6f;
+    // heavy / 重い
+    return strength_ >= 1.0f;
 }
 
 void Player::PostDraw()

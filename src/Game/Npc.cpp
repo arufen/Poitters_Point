@@ -27,7 +27,12 @@ bool Npc::Init()
             {"throw", "data/Game/Models/Player/Anims/Carry_Walking.mv1", 1, 1.0f}
     });
 
-    SetTranslate({40, 5, 40});
+    // Randomize NPC stats / NPCのステータスをランダム化
+    hp_        = 8 + (GetRand(12));
+    strength_  = 0.7f + (GetRand(6) * 0.1f);
+    moveSpeed_ = 0.6f + (GetRand(4) * 0.1f);
+
+    SetTranslate({40 + (GetRand(60) - 30), 5, 40 + (GetRand(60) - 30)});
 
     auto col = AddComponent<ComponentCollisionCapsule>()    //
                    ->SetRadius(3.0f)
@@ -115,8 +120,39 @@ void Npc::UpdateSearchItem()
 
 void Npc::StartAim()
 {
-    //Decide: throw at the player, or in a random direction(プレイヤーに投げるか、ランダムな方向に投げるか決める)
-    aimAtPlayer_ = GetRand(99) < (int)(throwAtPlayerChance_ * 100.0f);
+    // Decide target: throw at the player, or at other NPCs, or in a random direction
+    // ターゲット決定：プレイヤーかNPCか、またはランダム方向
+    float roll = GetRand(99) / 99.0f;
+    if(roll < throwAtPlayerChance_) {
+        aimAtPlayer_ = true;
+        aimAtNpc_    = false;
+        aimTarget_   = nullptr;
+    }
+    else if(roll < throwAtPlayerChance_ + throwAtNpcChance_) {
+        aimAtPlayer_ = false;
+        aimAtNpc_    = true;
+        aimTarget_   = nullptr;
+        // Find closest other NPC / 一番近い他のNPCを狙う
+        auto   npcs     = Scene::GetObjectsPtr<PoittersPoint::Npc>();
+        float3 myPos    = GetTranslate();
+        float  bestDist = 1.0e30f;
+        for(auto& npc : npcs) {
+            if(npc.get() == this)
+                continue;
+            float3 to  = npc->GetTranslate() - myPos;
+            to.y       = 0.0f;
+            float dist = (float)length(to);
+            if(dist < bestDist) {
+                bestDist   = dist;
+                aimTarget_ = npc.get();
+            }
+        }
+    }
+    else {
+        aimAtPlayer_ = false;
+        aimAtNpc_    = false;
+        aimTarget_   = nullptr;
+    }
 
     float angle = GetRand(359) * DegToRad;
     randomDir_  = float3(sinf(angle), 0.0f, cosf(angle));
@@ -137,8 +173,14 @@ float3 Npc::GetAimDirection()
                 return normalize(toPlayer);
         }
     }
+    else if(aimAtNpc_ && aimTarget_) {
+        float3 toNpc = aimTarget_->GetTranslate() - GetTranslate();
+        toNpc.y      = 0.0f;
+        if((float)length(toNpc) > 0.01f)
+            return normalize(toNpc);
+    }
 
-    //No player found, or random mode(プレイヤーがいない、またはランダムモード)
+    //No target found, or random mode(ターゲットがいない、またはランダムモード)
     return randomDir_;
 }
 

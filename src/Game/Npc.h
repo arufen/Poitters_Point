@@ -51,6 +51,16 @@ private:
     //True if the model is already looking at the direction(モデルがすでにその方向を向いていればtrue)
     bool IsFacing(const float3& dir);
 
+    //Stats for NPCs (NPCステータス) - similar to player
+    float GetSpeed() const { return moveSpeed_; }
+    void  SetSpeed(float s) { moveSpeed_ = s; }
+    int   GetHP() const { return hp_; }
+    void  SetHP(int hp) { hp_ = hp; }
+    float GetStrength() const { return strength_; }
+    void  SetStrength(float str) { strength_ = str; }
+    // Can throw at NPC or player (NPC同士にも投げられるようにする)
+    void SetThrowAtNpcChance(float c) { throwAtNpcChance_ = c; }
+
 private:
     //Unique name. ComponentAttachModel finds the hand by the object name(固有の名前。ComponentAttachModelはオブジェクト名で手を探す)
     std::string npcName_;
@@ -60,11 +70,19 @@ private:
     float moveSpeed_   = 0.8f;     //Move amount per frame, same style as the player(1フレームの移動量。プレイヤーと同じ方式)
     float rotateSpeed_ = 20.0f;    //Turn speed(回転速度)
 
+    //Stats / ステータス
+    int   hp_       = 12;
+    float strength_ = 0.9f;
+
     //Chance to throw at the player. 0.0 - 1.0. Otherwise a random direction(プレイヤーに向けて投げる確率。0.0〜1.0。外れたらランダムな方向)
     float throwAtPlayerChance_ = 0.7f;
+    // Chance to throw at other NPCs / NPCに投げる確率
+    float throwAtNpcChance_ = 0.3f;
 
-    bool   aimAtPlayer_ = true;
-    float3 randomDir_   = {0.0f, 0.0f, 1.0f};
+    bool    aimAtPlayer_ = true;
+    bool    aimAtNpc_    = false;
+    Object* aimTarget_   = nullptr;
+    float3  randomDir_   = {0.0f, 0.0f, 1.0f};
 
     //Timers are counted in frames(タイマーはフレーム数で数える)
     int aimTimer_         = 0;
