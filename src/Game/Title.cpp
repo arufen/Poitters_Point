@@ -3,7 +3,7 @@
 //! @brief	Title
 //---------------------------------------------------------------------------//
 #include "Title.h"
-#include "MainStage.h"
+#include "SelectScene.h"
 
 #include <System/Scene.h>
 #include <WinMain.h>
@@ -20,7 +20,7 @@ bool Title::Init()
 void Title::Update()
 {
     if(Input::IsKeyDown(KEY_INPUT_RETURN)) {
-        Scene::Change(Scene::GetScene<PoittersPoint_MainStage>());
+        Scene::Change(Scene::GetScene<PoittersPoint_SelectScene>());
     }
 }
 
