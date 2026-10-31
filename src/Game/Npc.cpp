@@ -6,8 +6,20 @@
 #include "Npc.h"
 #include "Player.h"
 #include "MainStage.h"
+#include "Component/ComponentCharacterStats.h"
 #include "Component/ComponentPlayerPickUpTrigger.h"
 #include <cmath>
+#include <string>
+
+namespace {
+//Vector from "from" to "to" on the flat ground, height is ignored(fromからtoへのベクトル。高さは無視して平面だけ見る)
+float3 FlatVector(const float3& from, const float3& to)
+{
+    float3 v = to - from;
+    v.y      = 0.0f;
+    return v;
+}
+}    // namespace
 
 namespace PoittersPoint {
 bool Npc::Init()
@@ -16,9 +28,7 @@ bool Npc::Init()
 
     //Every NPC needs a different name, because the item attaches to the hand by object name(アイテムは名前で手にくっつくので、NPCごとに別の名前が必要)
     static int npcCount = 0;
-    npcName_            = "Npc" + std::to_string(npcCount);
-    npcCount++;
-    SetName(npcName_);
+    SetName("Npc" + std::to_string(npcCount++));
 
     AddComponent<ComponentModel>("data/Game/Models/Player/Salaryman.mv1")
         ->SetAnimation({
@@ -27,10 +37,8 @@ bool Npc::Init()
             {"throw", "data/Game/Models/Player/Anims/Carry_Walking.mv1", 1, 1.0f}
     });
 
-    // Randomize NPC stats / NPCのステータスをランダム化
-    hp_        = 8 + (GetRand(12));
-    strength_  = 0.7f + (GetRand(6) * 0.1f);
-    moveSpeed_ = 0.6f + (GetRand(4) * 0.1f);
+    // Randomize NPC stats: HP 8-19, strength 0.7-1.2, speed 0.6-0.9 / NPCのステータスをランダム化
+    AddComponent<ComponentCharacterStats>()->SetMaxHP(8 + GetRand(12))->SetStrength(0.7f + (GetRand(6) * 0.1f))->SetSpeed(0.6f + (GetRand(4) * 0.1f));
 
     SetTranslate({40 + (GetRand(60) - 30), 5, 40 + (GetRand(60) - 30)});
 
@@ -90,21 +98,18 @@ void Npc::UpdateSearchItem()
     }
 
     //Find the closest item that nobody is holding(誰も持っていない一番近いアイテムを探す)
-    auto   items     = Scene::GetObjectsPtr<PoittersPoint::Item>();
     float3 myPos     = GetTranslate();
     float3 bestDir   = {0.0f, 0.0f, 0.0f};
     float  bestDist  = 1.0e30f;
     bool   foundItem = false;
 
-    for(auto& item : items) {
+    for(auto& item : Scene::GetObjectsPtr<PoittersPoint::Item>()) {
         auto pickup = item->GetComponent<ComponentItemPickUp>();
         if(!pickup || pickup->IsHeld())
             continue;    //No pickup component, or someone is holding it(拾うコンポーネントがない、または誰かが持っている)
 
-        float3 toItem = item->GetTranslate() - myPos;
-        toItem.y      = 0.0f;    //Only look at the flat distance(平面の距離だけを見る)
-
-        float dist = (float)length(toItem);
+        float3 toItem = FlatVector(myPos, item->GetTranslate());
+        float  dist   = (float)length(toItem);
         if(dist < bestDist) {
             bestDist  = dist;
             bestDir   = toItem;
@@ -123,61 +128,59 @@ void Npc::StartAim()
     // Decide target: throw at the player, or at other NPCs, or in a random direction
     // ターゲット決定：プレイヤーかNPCか、またはランダム方向
     float roll = GetRand(99) / 99.0f;
+    aimTarget_.reset();
+
     if(roll < throwAtPlayerChance_) {
-        aimAtPlayer_ = true;
-        aimAtNpc_    = false;
-        aimTarget_   = nullptr;
+        aimMode_ = AimMode::Player;
     }
     else if(roll < throwAtPlayerChance_ + throwAtNpcChance_) {
-        aimAtPlayer_ = false;
-        aimAtNpc_    = true;
-        aimTarget_   = nullptr;
+        aimMode_ = AimMode::Npc;
+
         // Find closest other NPC / 一番近い他のNPCを狙う
-        auto   npcs     = Scene::GetObjectsPtr<PoittersPoint::Npc>();
         float3 myPos    = GetTranslate();
         float  bestDist = 1.0e30f;
-        for(auto& npc : npcs) {
+        for(auto& npc : Scene::GetObjectsPtr<PoittersPoint::Npc>()) {
             if(npc.get() == this)
                 continue;
-            float3 to  = npc->GetTranslate() - myPos;
-            to.y       = 0.0f;
-            float dist = (float)length(to);
+
+            float dist = (float)length(FlatVector(myPos, npc->GetTranslate()));
             if(dist < bestDist) {
                 bestDist   = dist;
-                aimTarget_ = npc.get();
+                aimTarget_ = npc;
             }
         }
     }
     else {
-        aimAtPlayer_ = false;
-        aimAtNpc_    = false;
-        aimTarget_   = nullptr;
+        aimMode_ = AimMode::Random;
     }
 
     float angle = GetRand(359) * DegToRad;
     randomDir_  = float3(sinf(angle), 0.0f, cosf(angle));
 
     aimTimer_ = 0;
-    state_    = State::AimThrow;
+
+    //Pause for a moment after picking up, like a real player(本物のプレイヤーのように、拾ったあと少し止まる)
+    holdTimer_ = holdMinFrames_ + GetRand(holdRandomFrames_);
+
+    state_ = State::AimThrow;
 }
 
 float3 Npc::GetAimDirection()
 {
-    if(aimAtPlayer_) {
-        auto players = Scene::GetObjectsPtr<PoittersPoint::Player>();
-        for(auto& player : players) {
-            float3 toPlayer = player->GetTranslate() - GetTranslate();
-            toPlayer.y      = 0.0f;
-
+    if(aimMode_ == AimMode::Player) {
+        for(auto& player : Scene::GetObjectsPtr<PoittersPoint::Player>()) {
+            float3 toPlayer = FlatVector(GetTranslate(), player->GetTranslate());
             if((float)length(toPlayer) > 0.01f)
                 return normalize(toPlayer);
         }
     }
-    else if(aimAtNpc_ && aimTarget_) {
-        float3 toNpc = aimTarget_->GetTranslate() - GetTranslate();
-        toNpc.y      = 0.0f;
-        if((float)length(toNpc) > 0.01f)
-            return normalize(toNpc);
+    else if(aimMode_ == AimMode::Npc) {
+        //lock() gives nullptr if that NPC is already gone(そのNPCがもういなければlock()はnullptrを返す)
+        if(auto target = aimTarget_.lock()) {
+            float3 toNpc = FlatVector(GetTranslate(), target->GetTranslate());
+            if((float)length(toNpc) > 0.01f)
+                return normalize(toNpc);
+        }
     }
 
     //No target found, or random mode(ターゲットがいない、またはランダムモード)
@@ -191,6 +194,19 @@ void Npc::UpdateAimThrow()
     //We lost the item, go back to searching(アイテムを失ったので探す状態に戻る)
     if(!trigger || !trigger->HasItem()) {
         state_ = State::SearchItem;
+        return;
+    }
+
+    //Still lifting a heavy item, wait here and do not move or throw(まだ重いアイテムを持ち上げ中なので、ここで待つ。動かないし投げない)
+    if(trigger->IsLifting()) {
+        StopMove();
+        return;
+    }
+
+    //Lift is done. Stand still for a moment before aiming (counts down only after the lift)(持ち上げが終わった。ねらう前に少し立ち止まる。持ち上げが終わってから数える)
+    if(holdTimer_ > 0) {
+        holdTimer_--;
+        StopMove();
         return;
     }
 
@@ -221,7 +237,9 @@ void Npc::UpdateCooldown()
 void Npc::MoveTowards(const float3& dir)
 {
     //Move in the world direction, same call as ComponentStateIdleWalk(ワールド方向に移動。ComponentStateIdleWalkと同じ呼び方)
-    AddTranslate(dir * moveSpeed_, true);
+    auto  stats = GetComponent<ComponentCharacterStats>();
+    float speed = stats ? stats->GetSpeed() : 0.8f;    //0.8 = fallback without stats(ステータスがない時の予備の速度)
+    AddTranslate(dir * speed, true);
 
     FaceTowards(dir);
 
@@ -251,6 +269,12 @@ bool Npc::IsFacing(const float3& dir)
     float3 facing = normalize(-mdl->GetWorldVectorAxisZ());
 
     return (float)dot(facing, dir) > 0.98f;
+}
+
+void Npc::TakeDamage(int dmg)
+{
+    if(auto stats = GetComponent<ComponentCharacterStats>())
+        stats->TakeDamage(dmg);
 }
 
 }    // namespace PoittersPoint

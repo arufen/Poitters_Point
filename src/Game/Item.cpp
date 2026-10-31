@@ -6,10 +6,12 @@
 #include "Item.h"
 #include "MainStage.h"
 #include "Component/ComponentItemPickUp.h"
-
-namespace PoittersPoint {
+#include "Player.h"
+#include "Npc.h"
 //! @brief 初期化 / Initialize
 //! @return 初期化終了 / Initialization finished
+namespace PoittersPoint {
+
 bool Item::Init()
 {
     Super::Init();
@@ -88,6 +90,55 @@ void Item::OnHit(const ComponentCollision::HitInfo& hit_info)
         // tell the pickup component it landed, so it can stop moving
         if(auto pickup = GetComponent<ComponentItemPickUp>())
             pickup->OnLanded();
+    }
+    else if(name == "Player") {
+        // If item is thrown and hits player, deal damage
+        auto pickup = GetComponent<ComponentItemPickUp>();
+        if(pickup && pickup->IsThrown()) {
+            // Calculate damage based on weight
+            int dmg = 1;
+            if(weightType_ == WeightType::Light)
+                dmg = 1;
+            else if(weightType_ == WeightType::Medium)
+                dmg = 2;
+            else if(weightType_ == WeightType::Heavy)
+                dmg = 3;
+            // Scale by weight value
+            dmg = (int)(dmg * weight_ / 1.0f);
+            if(dmg < 1)
+                dmg = 1;
+            if(dmg > 5)
+                dmg = 5;
+
+            if(auto player = dynamic_cast<Player*>(hit_info.hit_collision_->GetOwner())) {
+                player->TakeDamage(dmg);
+            }
+            pickup->OnLanded();
+        }
+    }
+    else if(name == "Npc") {
+        // If item is thrown and hits NPC, deal damage
+        auto pickup = GetComponent<ComponentItemPickUp>();
+        if(pickup && pickup->IsThrown()) {
+            // Calculate damage based on weight
+            int dmg = 1;
+            if(weightType_ == WeightType::Light)
+                dmg = 1;
+            else if(weightType_ == WeightType::Medium)
+                dmg = 2;
+            else if(weightType_ == WeightType::Heavy)
+                dmg = 3;
+            dmg = (int)(dmg * weight_ / 1.0f);
+            if(dmg < 1)
+                dmg = 1;
+            if(dmg > 5)
+                dmg = 5;
+
+            if(auto npc = dynamic_cast<Npc*>(hit_info.hit_collision_->GetOwner())) {
+                npc->TakeDamage(dmg);
+            }
+            pickup->OnLanded();
+        }
     }
 
     // 最後にこれを入れてください。ここでめり込みの解消を行っています。

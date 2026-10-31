@@ -47,9 +47,6 @@ bool PoittersPoint_MainStage::Init()
         }
     }
     // Also spawn one more as before for compatibility / 互換性のため1つ追加
-    Scene::Object::Create<Item>();
-
-    //createEnemy();
 
     return true;
 }
