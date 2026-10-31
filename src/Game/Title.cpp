@@ -3,6 +3,7 @@
 //! @brief	Title
 //---------------------------------------------------------------------------//
 #include "Title.h"
+#include "Main_menu.h"
 #include "MainStage.h"
 #include <System/Scene.h>
 #include <WinMain.h>
@@ -122,8 +123,8 @@ void Title::Update()
         fadeAlpha_ += 5.0f;
         if(fadeAlpha_ >= 255.0f) {
             fadeAlpha_ = 255.0f;
-            // 完全暗転したらステージへ遷移
-            Scene::Change(Scene::GetScene<PoittersPoint_MainStage>());
+            // 完全暗転したらメインメニューへ遷移
+            Scene::Change(Scene::GetScene<MainMenu>());
         }
         break;
     }
