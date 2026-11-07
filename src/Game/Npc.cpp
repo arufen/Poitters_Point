@@ -30,11 +30,12 @@ bool Npc::Init()
     static int npcCount = 0;
     SetName("Npc" + std::to_string(npcCount++));
 
-    AddComponent<ComponentModel>("data/Game/Models/Player/Salaryman.mv1")
+    //NPC uses the police model and its own animations(NPCは警察のモデルとそのアニメを使う)
+    AddComponent<ComponentModel>("data/Game/Models/Enemy/POLICE/Police.mv1")
         ->SetAnimation({
-            { "idle",          "data/Game/Models/Player/Anims/Idle.mv1", 0, 1.0f},
-            { "walk",       "data/Game/Models/Player/Anims/Walking.mv1", 0, 3.3f},
-            {"throw", "data/Game/Models/Player/Anims/Carry_Walking.mv1", 1, 1.0f}
+            { "idle",    "data/Game/Models/Enemy/POLICE/Anims/Idle.mv1", 0, 1.0f},
+            { "walk", "data/Game/Models/Enemy/POLICE/Anims/Walking.mv1", 0, 3.3f},
+            {"throw",  "data/Game/Models/Enemy/POLICE/Anims/Snatch.mv1", 0, 1.0f}
     });
 
     // Randomize NPC stats: HP 8-19, strength 0.7-1.2, speed 0.6-0.9 / NPCのステータスをランダム化
