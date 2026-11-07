@@ -15,12 +15,19 @@ public:
 
     void Update() override;
 
+    //Draws the "lifting" text and gauge above the head(頭の上に「持ち上げ中」の文字とゲージを描く)
+    void PostDraw() override;
+
     void GUI() override;
 
     // true if this player is currently holding an item
     bool HasItem() const { return !heldItem_.expired(); }
 
+    //True while the owner is lifting an item. Can not move or throw during this time(持ち上げている間true。この間は動けないし投げられない)
+    bool IsLifting() const { return liftTimer_ > 0.0f; }
+
     // call this from ComponentStateThrow (or input handling) when player throws
+    //Does nothing while lifting(持ち上げ中は何もしない)
     void ThrowItem();
 
     //アイテムを持ち上げる
@@ -35,6 +42,10 @@ private:
 
     // the item this player is currently holding, if any
     PoittersPoint::ItemWeakPtr heldItem_;
+
+    //Lift time left and total, in seconds(持ち上げの残り時間と全体の時間(秒))
+    float liftTimer_ = 0.0f;
+    float liftTotal_ = 0.0f;
 
     CEREAL_SAVELOAD(arc, ver) { arc(cereal::make_nvp("Component", cereal::base_class<Component>(this))); }
 };

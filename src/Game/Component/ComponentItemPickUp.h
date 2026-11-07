@@ -27,6 +27,7 @@ public:
     void OnLanded();
 
     bool IsHeld() const { return isHeld_; }
+    bool IsThrown() const { return isThrown_; }
 
 private:
     bool    isHeld_     = false;
