@@ -8,6 +8,7 @@
 #include "Component/ComponentCameraController.h"
 #include "Component/ComponentPlayerState.h"
 #include "Component/ComponentPlayerPickUpTrigger.h"
+#include "Game/Component/ComponentStateIdleWalk.h"
 #include <cstring>
 
 namespace PoittersPoint {
@@ -22,12 +23,13 @@ bool Player::Init()
     auto player = Scene::Object::Create<Object>("Player");
     AddComponent<ComponentModel>("data/Game/Models/Player/Salaryman.mv1")
         ->SetAnimation({
-            {       "idle",           "data/Game/Models/Player/Anims/Idle.mv1", 0, 1.0f}, // Idle(mixamo)
-            {       "walk",        "data/Game/Models/Player/Anims/Walking.mv1", 0, 1.0f}, // Walk(mixamo)
-            {"Carry_start", "data/Game/Models/Player/OR_Anims/Carry_start.mv1", 4, 1.0f}, // Throw
-            {       "lift",        "data/Game/Models/Player/OR_Anims/lift.mv1", 4, 1.0f}, // Idle
-            { "Cally_walk",  "data/Game/Models/Player/OR_Anims/Cally_walk.mv1", 4, 1.0f}, // Jump
-            {"Cally_throw", "data/Game/Models/Player/OR_Anims/Carry_Throw.mv1", 4, 1.0f}, // Throw
+            {      "idle",          "data/Game/Models/Player/Anims/Idle.mv1", 0, 1.0f}, // Idle(mixamo)
+            {      "walk",       "data/Game/Models/Player/Anims/Walking.mv1", 0, 1.0f}, // Walk(mixamo)
+            //{"Carry_start", "data/Game/Models/Player/OR_Anims/ORCS2.mv1", 0, 1.0f}, // 持とうとする(Carry_start.mv1 idx1/idx2にmixamo実モーションあり)
+            //{"Carry_start2","data/Game/Models/Player/OR_Anims/ORCS2.mv1", 1,1.0f}, // 持ち上げて保持状態にうつるまで(idx3はキーフレーム空・idx1のみ実モーションあり)
+            {"Carry_walk", "data/Game/Models/Player/OR_Anims/Carry_walk.mv1", 3, 1.0f}, // 持ちながら歩く(実ファイル名は Carry_walk.mv1)保持状態を保
+            //{"Carry_throw", "data/Game/Models/Player/OR_Anims/Carry_Throw.mv1", 1, 1.0f}, // (登録のみ・未使用。実投げモーションは"throw"/Snatch.mv1を使用)
+            {     "throw",        "data/Game/Models/Player/Anims/Snatch.mv1", 0, 1.0f}, // 投げる(mixamo Snatch:持ち上げながら投げる)
     });
 
     SetTranslate({0, 5, 0});
@@ -56,14 +58,87 @@ void Player::Update()
 {
     Super::Update();
 
-    if(auto pickUpTrigger = GetComponent<ComponentPlayerPickUpTrigger>()) {
+    auto pickUpTrigger = GetComponent<ComponentPlayerPickUpTrigger>();
+    auto model         = GetComponent<ComponentModel>();
+    auto idleWalk      = GetComponent<ComponentStateIdleWalk>();
+
+    if(pickUpTrigger && model) {
+        //Eキー: 拾う / 投げる
         if(Input::IsKeyOn(KEY_INPUT_E)) {
             if(pickUpTrigger->HasItem()) {
-                pickUpTrigger->ThrowItem();
+                //投げアニメ再生中は再入力を無視(終了後に拾い直しできる)
+                if(carryState_ != CarryAnimState::Throw) {
+                    carryState_    = CarryAnimState::Throw;
+                    throwReleased_ = false;
+                    //Carry_Throw.mv1 の idx1 は start/lift と同じ運びモーションで投げモーションではないため、
+                    //実際に腕を伸ばして投げる mixamo の Snatch ("throw") を再生する
+                    model->PlayAnimation("throw");
+                }
             }
-            else {
+            else if(carryState_ != CarryAnimState::Throw) {
                 pickUpTrigger->PickUpItem();
+                //実際に拾えた場合だけ持ち上げアニメーションを開始
+                if(pickUpTrigger->HasItem()) {
+                    carryState_ = CarryAnimState::Start;
+                    model->PlayAnimation("Carry_start");
+                }
             }
+        }
+
+        bool isMoving = (Input::IsKey(KEY_INPUT_W) || Input::IsKey(KEY_INPUT_A) || Input::IsKey(KEY_INPUT_S) || Input::IsKey(KEY_INPUT_D));
+
+        if(pickUpTrigger->HasItem()) {
+            //持ち中のアニメーション進行
+            //非ループアニメは終了すると IsPlaying() が false になり、最後のポーズを保持する
+            switch(carryState_) {
+            case CarryAnimState::Start:
+                //Carry_start 終了 → Carry_start2 で持ち上げを続ける
+                if(!model->IsPlaying()) {
+                    carryState_ = CarryAnimState::Start2;
+                    model->PlayAnimation("Carry_start2");
+                }
+                break;
+
+            case CarryAnimState::Start2:
+                //移動開始 → 持ちながら歩くアニメーション(歩き中はループ)
+                if(isMoving) {
+                    carryState_ = CarryAnimState::Walk;
+                    model->PlayAnimation("Carry_walk", true);
+                }
+                break;
+
+            case CarryAnimState::Walk:
+                //移動停止 → 持ち上げて保持するポーズへ戻る
+                if(!isMoving) {
+                    carryState_ = CarryAnimState::Start2;
+                    model->PlayAnimation("Carry_start2");
+                }
+                break;
+
+            case CarryAnimState::Throw:
+                //投げアニメの腕伸展フレーム(リリース点)でアイテムを手から離す
+                if(!throwReleased_ && model->GetAnimationTime() >= throwReleaseTime_) {
+                    pickUpTrigger->ThrowItem();
+                    throwReleased_ = true;
+                }
+                break;
+
+            default:
+                break;
+            }
+        }
+        else {
+            //投げ終わり → idle へ戻る
+            if(carryState_ == CarryAnimState::Throw && !model->IsPlaying()) {
+                carryState_ = CarryAnimState::None;
+                model->PlayAnimation("idle");
+            }
+        }
+
+        //持ち中・投げ中は idle/walk アニメーションの再生を止めて Carry アニメを上書きさせない
+        if(idleWalk) {
+            bool carrying = pickUpTrigger->HasItem() || carryState_ == CarryAnimState::Throw;
+            idleWalk->SetAnimationsEnabled(!carrying);
         }
     }
 }
