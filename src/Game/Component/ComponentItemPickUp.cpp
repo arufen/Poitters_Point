@@ -10,6 +10,8 @@ void ComponentItemPickUp::Init()
     isGround_ = false;
     velocity_ = {0.0f, 0.0f, 0.0f};
     holder_   = nullptr;
+    thrower_  = nullptr;
+    hasHit_   = false;
 }
 
 void ComponentItemPickUp::Update()
@@ -62,6 +64,15 @@ void ComponentItemPickUp::OnLanded()
         return;
 
     isGround_ = true;
+}
+
+void ComponentItemPickUp::OnHitCharacter()
+{
+    hasHit_ = true;
+
+    //Lose most sideways speed so the item drops near the target instead of flying through(横の速度をほぼなくして、貫通せずに相手の近くに落ちるようにする)
+    velocity_.x *= 0.2f;
+    velocity_.z *= 0.2f;
 }
 
 void ComponentItemPickUp::OnPickedUp(Object* holder)
@@ -149,6 +160,10 @@ void ComponentItemPickUp::OnThrow()
     velocity_    = direction * throwSpeed_;
     velocity_.y += upBoost_;
     isThrown_    = true;
+
+    //New throw: remember who threw it and allow one hit again(新しい投げ：誰が投げたかを覚えて、もう一度1回だけ当たれるようにする)
+    thrower_ = holder_;
+    hasHit_  = false;
 
     //Short window where landings are ignored(着地を無視する短い猶予時間)
     throwGraceTimer_ = 0.2f;

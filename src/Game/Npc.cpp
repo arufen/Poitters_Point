@@ -44,7 +44,7 @@ bool Npc::Init()
 
     auto col = AddComponent<ComponentCollisionCapsule>()    //
                    ->SetRadius(3.0f)
-                   ->SetHeight(13.0f);
+                   ->SetHeight(23.4f);
 
     col->UseGravity();
     col->SetCollisionGroup(ComponentCollision::CollisionGroup::PLAYER);
