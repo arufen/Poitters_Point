@@ -20,10 +20,6 @@ public:
 
     void PostDraw() override;
 
-    //Stats (HP, strength, speed) live in ComponentCharacterStats now(ステータスはComponentCharacterStatsに入っている)
-    //This just passes the damage to it(ダメージをそこへ渡すだけ)
-    void TakeDamage(int dmg);
-
 private:
     //Draw the "PLAYER" marker above the head so we can tell the player from the NPCs(頭の上に「PLAYER」の目印を描いて、プレイヤーとNPCを見分けられるようにする)
     void DrawPlayerMarker();
@@ -31,8 +27,8 @@ private:
     //Draw the E key icon above the item that can be picked up(拾えるアイテムの上にEキーのアイコンを描く)
     void DrawPickUpIcon();
 
-    //Draw the HP bar at the top-left of the screen(画面の左上にHPバーを描く)
-    void DrawHpBar();
+    //Draw the HP bars of the player and all NPCs in a row at the bottom of the screen(画面の下にプレイヤーと全NPCのHPバーを横一列に描く)
+    void DrawHpHud();
 
 private:
     //How high above the feet the marker floats(足元からどれだけ上に目印を浮かべるか)
