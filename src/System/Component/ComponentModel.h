@@ -103,6 +103,11 @@ public:
     //! @param start_time スタートする位置(デフォルト:0.0)
     void PlayAnimationEx(std::string_view name, std::string_view node, bool loop = false, float blend_time = 0.2f, float start_time = 0.0f);
 
+    //! @brief アニメーションの再生速度を設定(再生中でも次の更新から反映)
+    //! @param name 対象のアニメーション名
+    //! @param speed 再生速度(default:1.0f)
+    void SetAnimationSpeed(std::string_view name, float speed);
+
     //! @brief アニメーション中かどうか
     //! @retval true : アニメーション中
     bool IsPlaying();
@@ -134,6 +139,11 @@ public:
     //! @brief 再生経過時間の取得
     //! @return 再生経過時間
     const float GetAnimationTime();
+
+    //! @brief アニメーションの総再生時間の取得(速度1.0f基準)
+    //! @param name 対象のアニメーション名
+    //! @return 総再生時間(秒)。見つからなければ0.0f
+    float GetAnimationTotalTime(std::string_view name) const;
 
     //@}
 

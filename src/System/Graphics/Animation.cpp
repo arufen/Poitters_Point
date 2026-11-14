@@ -145,6 +145,22 @@ bool Animation::play(std::string_view name, bool is_loop, f32 blend_time, f32 st
 }
 
 //---------------------------------------------------------------------------
+//! アニメーションの再生速度を設定する
+//---------------------------------------------------------------------------
+bool Animation::setAnimationSpeed(std::string_view name, f32 speed)
+{
+    s32 index = animationIndex(name);
+    if(index == -1) {
+        return false;
+    }
+
+    // 速度は0以下にしない(updateで再生時間が進まなくなるため)
+    descs_[index].animation_speed_ = speed > 0.0f ? speed : FLT_EPSILON;
+
+    return true;
+}
+
+//---------------------------------------------------------------------------
 //! アニメーションを停止する
 //---------------------------------------------------------------------------
 void Animation::pause(bool active)
@@ -183,6 +199,24 @@ s32 Animation::animationIndex(std::string_view name) const
 const Animation::Desc* Animation::desc(s32 index) const
 {
     return &descs_[index];
+}
+
+//---------------------------------------------------------------------------
+//! アニメーションの総再生時間を取得(アニメーション名指定)
+//---------------------------------------------------------------------------
+f32 Animation::animationTotalTime(std::string_view name) const
+{
+    s32 index = animationIndex(name);
+    if(index < 0 || index >= static_cast<s32>(descs_.size())) {
+        return 0.0f;
+    }
+
+    int animation_mv1_handle = animation_mv1_handles_[index];
+    if(animation_mv1_handle == -1) {
+        return 0.0f;
+    }
+
+    return DxLib::MV1GetAnimTotalTime(animation_mv1_handle, descs_[index].animation_index_);
 }
 
 //---------------------------------------------------------------------------

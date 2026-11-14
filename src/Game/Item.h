@@ -28,8 +28,10 @@ public:
         Heavy      // 重い / Heavy
     };
 
-    WeightType         GetWeightType() const { return weightType_; }
-    float              GetWeight() const { return weight_; }
+    WeightType GetWeightType() const { return weightType_; }
+    float      GetWeight() const { return weight_; }
+    //Object size (model scale). Used to scale the lifting animation(オブジェクトの大きさ(モデルのスケール)。持ち上げアニメーションの速さに使う)
+    float              GetSize() const { return size_; }
     const std::string& GetItemName() const { return itemName_; }
     void               RandomizeStats();
 
@@ -39,6 +41,7 @@ public:
 private:
     WeightType  weightType_ = WeightType::Medium;
     float       weight_     = 1.0f;
+    float       size_       = 0.5f;    //Model scale set in Init(Initで設定したモデルのスケール)
     std::string itemName_;
 };
 }    // namespace PoittersPoint

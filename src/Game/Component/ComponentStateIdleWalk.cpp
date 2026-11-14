@@ -48,13 +48,15 @@ void ComponentStateIdleWalk::Update()
             auto rot = quaternion::rotation_axis({0, 1, 0}, front_rot_ * DegToRad);    //< Y軸1度回転
 
             mdl->SetRotationToVectorWithLimit(mul(dir, rot), rot_speed_);
-            mdl->PlayAnimationNoSame("walk", true);
+            if(animations_enabled_)
+                mdl->PlayAnimationNoSame("walk", true);
         }
     }
     else {
         // モデルを移動の方向に向けます
         if(auto mdl = owner->GetComponent<ComponentModel>()) {
-            mdl->PlayAnimationNoSame("idle", true);
+            if(animations_enabled_)
+                mdl->PlayAnimationNoSame("idle", true);
         }
     }
 }

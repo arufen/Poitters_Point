@@ -550,6 +550,22 @@ void ComponentModel::PlayAnimationEx(std::string_view name, std::string_view nod
     node_point->play(name, loop, blend_time, start_time);
 }
 
+void ComponentModel::SetAnimationSpeed(std::string_view name, float speed)
+{
+    if(!animation_)
+        return;
+
+    animation_->setAnimationSpeed(name, speed);
+
+    // エディター用の定義にも同じ速度を反映しておく
+    for(auto& desc : animations_desc_) {
+        if(desc.name_ == name) {
+            desc.animation_speed_ = speed > 0.0f ? speed : 0.0f;
+            break;
+        }
+    }
+}
+
 bool ComponentModel::IsPlaying()
 {
     if(animation_)
@@ -613,6 +629,14 @@ const float ComponentModel::GetAnimationTime()
 {
     if(IsPlaying())
         return animation_time_;
+
+    return 0.0f;
+}
+
+float ComponentModel::GetAnimationTotalTime(std::string_view name) const
+{
+    if(animation_)
+        return animation_->animationTotalTime(name);
 
     return 0.0f;
 }
