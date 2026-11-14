@@ -46,6 +46,7 @@ bool Item::Init()
         scaleFactor = 0.7f + (GetRand(15) * 0.01f);
     float3 size = {scaleFactor, scaleFactor, scaleFactor};
     SetScaleAxisXYZ(size);
+    size_ = scaleFactor;    //Remember the object size so the lifting animation can match it(持ち上げアニメーションが物のに合わせて速さを決めるよう大きさを記録)
 
     //Component
     AddComponent<ComponentItemPickUp>();

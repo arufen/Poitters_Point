@@ -25,9 +25,12 @@ bool Player::Init()
     auto player = Scene::Object::Create<Object>("Player");
     AddComponent<ComponentModel>("data/Game/Models/Player/Salaryman.mv1")
         ->SetAnimation({
-            { "idle",          "data/Game/Models/Player/Anims/Idle.mv1", 0, 1.0f}, // Idle
-            { "walk",       "data/Game/Models/Player/Anims/Walking.mv1", 0, 3.3f}, // Walk
-            {"throw", "data/Game/Models/Player/Anims/Carry_Walking.mv1", 1, 1.0f}  // Throw/Carry related
+            {      "idle",           "data/Game/Models/Player/Anims/Idle.mv1", 0, 1.0f}, // Idle
+            {      "walk",        "data/Game/Models/Player/Anims/Walking.mv1", 0, 3.3f}, // Walk
+            {"carryStart", "data/Game/Models/Player/OR_Anims/Carry_start.mv1", 0, 1.0f}, // 物を持ち上げ始める(OR_Anims)
+            { "carryWalk",  "data/Game/Models/Player/OR_Anims/Carry_walk.mv1", 3, 1.5f}, // 物を持ちながら歩く(OR_Anims)
+            {     "throw",       "data/Game/Models/Player/OR_Anims/Throw.mv1", 0, 1.0f}, // 物を投げる
+            { "carryHold", "data/Game/Models/Player/OR_Anims/Carry_start.mv1", 0, 1.0f}  // 持ち位置のポーズ(Carry_startの終点フレーム)
     });
     SetTranslate({0, 5, 0});
 
@@ -61,27 +64,114 @@ void Player::Update()
     if(!pickUpTrigger)
         return;
 
-    //Can not move while lifting an item. Turn the walk component off and on(アイテムを持ち上げている間は動けない。歩くコンポーネントをオフ/オンする)
-    bool lifting = pickUpTrigger->IsLifting();
-    if(auto walk = GetComponent<ComponentStateIdleWalk>())
-        walk->SetStatus(Component::StatusBit::Enable, !lifting);
+    auto mdl  = GetComponent<ComponentModel>();
+    auto walk = GetComponent<ComponentStateIdleWalk>();
 
+    bool lifting = pickUpTrigger->IsLifting();
+    bool holding = pickUpTrigger->HasItem();
+
+    //持ち上げが終わったら、次の持ち上げで速さを再計算させる(持ち上げが終わったら次の持ち上げで速さを再計算する)
+    if(!lifting)
+        liftAnimStarted_ = false;
+
+    //再生中の投げアニメ：腕伸展フレーム付近でアイテムを離す
+    if(throwTimer_ > 0.0f) {
+        throwTimer_ += GetDeltaTime();
+
+        if(!throwReleased_ && throwTimer_ >= throwReleaseTime_) {
+            throwReleased_ = true;
+            pickUpTrigger->ThrowItem();
+        }
+
+        //アニメーション再生が終わったら通常に戻す
+        if(throwTimer_ >= throwAnimTime_) {
+            throwTimer_    = 0.0f;
+            throwReleased_ = false;
+        }
+    }
+
+    //アイテムを持ち上げている間と投げている間は動けない。歩くコンポーネントをオフ/オンする(持ち上げ中と投げ中は動けない。歩くコンポーネントをオフ/オンする)
+    if(walk)
+        walk->SetStatus(Component::StatusBit::Enable, !lifting && throwTimer_ <= 0.0f);
+
+    //持ち上げ中はOR_Animsの「持ち始め」モーションを1回だけ再生(持ち上げ中はOR_Animsの持ち始めモーションを1回だけ再生)
     if(lifting) {
-        //Stand still until the lift is done(持ち上げが終わるまで立ち止まる)
-        if(auto mdl = GetComponent<ComponentModel>())
-            mdl->PlayAnimationNoSame("idle", true);
+        if(walk)
+            walk->SetAnimationsEnabled(false);
+
+        if(mdl) {
+            //持ち上げの初回だけ、物の大きさに応じた速さをcarryStartに設定する(大きくて重い物ほどゆっくり、小さい物ほど速く)
+            if(!liftAnimStarted_) {
+                liftAnimStarted_ = true;
+
+                float native = mdl->GetAnimationTotalTime("carryStart");    //速度1.0fでの総フレーム数(frame単位)
+                float dur    = pickUpTrigger->GetLiftDuration();            //物の大きさで決まった持ち上げ時間(秒)
+
+                //play_time_はframe単位で dt*kAnimFps_*speed 進むので、dur秒で終わる速さ = native / (kAnimFps_ * dur)
+                float speed = 1.0f;
+                if(native > 0.0f && dur > 0.001f)
+                    speed = native / (kAnimFps_ * dur);
+
+                if(speed < minLiftAnimSpeed_)
+                    speed = minLiftAnimSpeed_;
+                if(speed > maxLiftAnimSpeed_)
+                    speed = maxLiftAnimSpeed_;
+
+                mdl->SetAnimationSpeed("carryStart", speed);
+            }
+
+            mdl->PlayAnimationNoSame("carryStart", false, 0.2f, 0.0f);
+        }
 
         return;
     }
 
-    //E key: throw if holding an item, otherwise pick up(Eキー：持っていれば投げる、持っていなければ拾う)
-    if(!Input::IsKeyOn(KEY_INPUT_E))
+    //投げ中はアニメ再生に任せてタイマーを待つ(投げ中はアニメ再生に任せてタイマーを待つ)
+    if(throwTimer_ > 0.0f)
         return;
 
-    if(pickUpTrigger->HasItem())
-        pickUpTrigger->ThrowItem();
-    else
+    if(holding) {
+        //歩くコンポーネントにidle/walkで上書きさせない(歩くコンポーネントにidle/walkで上書きさせない)
+        if(walk)
+            walk->SetAnimationsEnabled(false);
+
+        if(mdl) {
+            //歩く時はOR_AnimsのCarry_walk、 stand時はCarry_start_1の終点ポーズを保持(歩く時はOR_AnimsのCarry_walk、立っている時はCarry_start_1の終点ポーズを保持)
+            if(Input::IsKey(KEY_INPUT_W) || Input::IsKey(KEY_INPUT_S) || Input::IsKey(KEY_INPUT_A) || Input::IsKey(KEY_INPUT_D))
+                mdl->PlayAnimationNoSame("carryWalk", true, 0.2f, 0.0f);
+            else
+                mdl->PlayAnimationNoSame("carryHold", false, 0.3f, 33.0f);    //終点ポーズ(start_time=33f)
+        }
+    }
+    else if(walk) {
+        //手ぶら：歩くコンポーネントにidle/walkを戻す(手ぶら：歩くコンポーネントにidle/walkを戻す)
+        walk->SetAnimationsEnabled(true);
+    }
+
+    //Eキー：持っていれば投げる、持っていなければ拾う。1回押しのみ有効(Eキー：持っていれば投げる、持っていなければ拾う。1回押しのみ有効)
+    if(!Input::IsKeyDown(KEY_INPUT_E))
+        return;
+
+    if(holding) {
+        //実再生長(frame)を読み取り、腕伸展フレーム位置(割合)でアイテムを離すようにリリース/終了時刻を決める
+        float native = mdl ? mdl->GetAnimationTotalTime("throw") : 0.0f;
+
+        //投げアニメ開始
+        if(mdl)
+            mdl->PlayAnimation("throw", false, 0.2f, 0.0f);
+
+        //nativeはframe単位。実秒=frame/kAnimFps_。腕伸展は全体のthrowReleaseRatio_位置で投げる
+        if(native > 0.0f) {
+            throwAnimTime_    = native / kAnimFps_;
+            throwReleaseTime_ = throwAnimTime_ * throwReleaseRatio_;
+        }
+
+        throwTimer_    = 0.01f;
+        throwReleased_ = false;
+    }
+    else {
         pickUpTrigger->PickUpItem();
+    }
 }
 
 void Player::TakeDamage(int dmg)
