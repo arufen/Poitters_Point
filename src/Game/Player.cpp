@@ -76,6 +76,13 @@ void DrawHpPanel(int x, int barY, int w, int h, const HpEntry& entry)
         DrawBox(x, barY, x + fillW, barY + h, GetHpBarColor(ratio), TRUE);
 
     DrawBox(x, barY, x + w, barY + h, GetColor(255, 255, 255), FALSE);
+
+    //Speed potion active: cyan outline and a thin timer line under the bar(スピードポーション中：水色の外枠と、バーの下に残り時間の細い線)
+    if(stats.HasSpeedBuff()) {
+        unsigned int cyan = GetColor(0, 220, 255);
+        DrawBox(x - 1, barY - 1, x + w + 1, barY + h + 1, cyan, FALSE);
+        DrawBox(x, barY + h + 3, x + (int)(w * stats.GetSpeedBuffRatio()), barY + h + 6, cyan, TRUE);
+    }
 }
 }    // namespace
 

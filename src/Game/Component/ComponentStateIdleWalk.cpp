@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include <Game/Component/ComponentStateIdleWalk.h>
+#include <Game/Component/ComponentCharacterStats.h>
 
 void ComponentStateIdleWalk::Init()
 {
@@ -35,7 +36,12 @@ void ComponentStateIdleWalk::Update()
         dir = normalize(dir);
 
         // キャラのローカル方向で移動をさせる
-        owner->AddTranslate(dir * move_speed_, true);
+        //Speed buff (speed potion) makes us faster. 1.0 when there is no buff(スピードバフ(スピードポーション)で速くなる。バフがなければ1.0)
+        float speedScale = 1.0f;
+        if(auto stats = owner->GetComponent<ComponentCharacterStats>())
+            speedScale = stats->GetSpeedMultiplier();
+
+        owner->AddTranslate(dir * (move_speed_ * speedScale), true);
 
         // モデルを移動の方向に向けます
         if(auto mdl = owner->GetComponent<ComponentModel>()) {

@@ -18,7 +18,7 @@ bool Item::Init()
     SetName("Item");
 
     //auto Item = Scene::Object::Create<Object>("Item");
-    auto model = AddComponent<ComponentModel>("data/Game/Models/Object/ThorwRock.mv1");
+    auto model = AddComponent<ComponentModel>("data/Game/Models/Object/ThorwRock2.mv1");
 
     // Randomize item stats / アイテムごとに固有のステータスをランダム化
     RandomizeStats();

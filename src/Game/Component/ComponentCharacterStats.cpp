@@ -5,6 +5,30 @@ void ComponentCharacterStats::Init()
     Super::Init();
 }
 
+void ComponentCharacterStats::Update()
+{
+    Super::Update();
+
+    //Count down the speed buff(スピードバフの残り時間を減らす)
+    if(speedBuffTimer_ > 0.0f) {
+        speedBuffTimer_ -= GetDeltaTime();
+        if(speedBuffTimer_ <= 0.0f) {
+            speedBuffTimer_      = 0.0f;
+            speedBuffMultiplier_ = 1.0f;
+        }
+    }
+}
+
+void ComponentCharacterStats::ApplySpeedBuff(float multiplier, float seconds)
+{
+    if(seconds <= 0.0f)
+        return;
+
+    speedBuffMultiplier_ = multiplier;
+    speedBuffTimer_      = seconds;
+    speedBuffTotal_      = seconds;
+}
+
 ComponentCharacterStatsPtr ComponentCharacterStats::SetMaxHP(int maxHp, bool fill)
 {
     maxHp_ = maxHp < 1 ? 1 : maxHp;
@@ -54,7 +78,8 @@ void ComponentCharacterStats::Heal(int amount)
 float ComponentCharacterStats::GetLiftTime(float itemWeight) const
 {
     //Never divide by a tiny number(小さい数で割らないようにする)
-    float strength = strength_ < 0.1f ? 0.1f : strength_;
+    //Speed buff also makes lifting faster(スピードバフ中は持ち上げも速くなる)
+    float strength = (strength_ < 0.1f ? 0.1f : strength_) * GetSpeedMultiplier();
 
     //Heavy items grow fast (weight x weight), strong characters are faster(重い物は急に時間が増える。筋力が高いと早い)
     float time = itemWeight * itemWeight * liftTimeScale_ / strength;
@@ -84,6 +109,7 @@ void ComponentCharacterStats::GUI()
                 SetStatus(StatusBit::Enable, enable);
 
             ImGui::Text("HP : %d / %d", hp_, maxHp_);
+            ImGui::Text("Speed buff : x%.2f (%.1f s left)", GetSpeedMultiplier(), speedBuffTimer_);
             ImGui::DragInt("HP", &hp_, 1, 0, maxHp_);
             ImGui::DragInt("Max HP", &maxHp_, 1, 1, 999);
             ImGui::DragFloat(u8"筋力", &strength_, 0.05f, 0.1f, 5.0f);
