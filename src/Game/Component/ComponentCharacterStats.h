@@ -13,6 +13,8 @@ public:
 
     void Init() override;
 
+    void Update() override;
+
     void GUI() override;
 
     //Set max HP. If fill is true, HP becomes full too(最大HPを設定。fillがtrueなら現在HPも満タンにする)
@@ -40,7 +42,20 @@ public:
     float GetHPRatio() const { return maxHp_ > 0 ? (float)hp_ / (float)maxHp_ : 0.0f; }
     bool  IsDead() const { return hp_ <= 0; }
     float GetStrength() const { return strength_; }
-    float GetSpeed() const { return speed_; }
+    //Move speed with the speed buff included(スピードバフを含めた移動速度)
+    float GetSpeed() const { return speed_ * GetSpeedMultiplier(); }
+
+    //Start a speed buff. multiplier 1.2 = 20% faster, for "seconds". A new one refreshes the old one, no stacking
+    //(スピードバフを始める。multiplier 1.2＝20%速い、秒数は"seconds"。新しいバフは古いバフを上書きし、重ねがけしない)
+    void ApplySpeedBuff(float multiplier, float seconds);
+
+    bool HasSpeedBuff() const { return speedBuffTimer_ > 0.0f; }
+
+    //1.0 normally, buffed value while the buff is active. Movement code multiplies by this(普段は1.0、バフ中はバフの倍率。移動処理はこれを掛ける)
+    float GetSpeedMultiplier() const { return HasSpeedBuff() ? speedBuffMultiplier_ : 1.0f; }
+
+    //Buff time left from 1.0 to 0.0, good for UI(バフの残り時間 1.0〜0.0。UI用)
+    float GetSpeedBuffRatio() const { return speedBuffTotal_ > 0.0f ? speedBuffTimer_ / speedBuffTotal_ : 0.0f; }
 
 private:
     int   hp_       = 15;      //Current HP(現在のHP)
@@ -50,6 +65,11 @@ private:
 
     float liftTimeScale_ = 0.3f;    //Bigger = lifting takes longer(大きいほど持ち上げに時間がかかる)
     float maxLiftTime_   = 3.5f;    //Longest lift time in seconds(持ち上げ時間の最大秒数)
+
+    //Speed buff. Only used while playing, not saved(スピードバフ。プレイ中だけ使うので保存しない)
+    float speedBuffMultiplier_ = 1.0f;
+    float speedBuffTimer_      = 0.0f;    //Seconds left(残り秒数)
+    float speedBuffTotal_      = 0.0f;    //Seconds at the start(開始時の秒数)
 
     //--------------------------------------------------------------------
     //! @name Cereal処理

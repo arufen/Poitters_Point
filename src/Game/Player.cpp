@@ -4,6 +4,7 @@
 //---------------------------------------------------------------------------
 
 #include "Player.h"
+#include "Npc.h"
 #include "MainStage.h"
 #include "Component/ComponentCameraController.h"
 #include "Component/ComponentCharacterStats.h"
@@ -12,6 +13,79 @@
 #include "Game/Component/ComponentStateIdleWalk.h"
 #include "Component/ComponentStateIdleWalk.h"
 #include <cstring>
+#include <string>
+#include <vector>
+
+namespace {
+//One entry of the bottom HP row: who it is and where the HP comes from(下のHP列の1人分：誰のHPか)
+struct HpEntry
+{
+    std::string                label;       //Name shown above the bar(バーの上に出す名前)
+    ComponentCharacterStatsPtr stats;       //HP source(HPの元になるステータス)
+    bool                       isPlayer;    //True = the human player(プレイヤー本人ならtrue)
+};
+
+//Draw text with a black shadow so it is easy to read on any ground(どんな地面の上でも読めるように、黒い影つきで文字を描く)
+void DrawTextWithShadow(int x, int y, const char* text, unsigned int color)
+{
+    DrawString(x + 1, y + 1, text, GetColor(0, 0, 0));
+    DrawString(x, y, text, color);
+}
+
+//Bar color changes with the HP ratio: green -> yellow -> red(HPの割合でバーの色を変える：緑→黄→赤)
+unsigned int GetHpBarColor(float ratio)
+{
+    if(ratio > 0.5f)
+        return GetColor(60, 200, 60);    //Green(緑)
+    if(ratio > 0.25f)
+        return GetColor(240, 200, 0);    //Yellow(黄)
+    return GetColor(230, 40, 40);        //Red(赤)
+}
+
+//Draw one HP panel. (x, barY) is the top-left of the bar(HPパネルを1つ描く。(x, barY)がバーの左上)
+void DrawHpPanel(int x, int barY, int w, int h, const HpEntry& entry)
+{
+    const ComponentCharacterStats& stats = *entry.stats;
+
+    bool  dead  = stats.IsDead();
+    float ratio = stats.GetHPRatio();
+
+    //Text line sits right above the bar. Use the current font size, so we never change the global font(文字はバーのすぐ上。今のフォントサイズを使うので、全体のフォントは変えない)
+    int textY = barY - GetFontSize() - 2;
+
+    //Name on the left. The player is yellow like the PLAYER marker. Dead = gray(左に名前。プレイヤーは頭上のPLAYERと同じ黄色。死亡は灰色)
+    unsigned int nameColor = entry.isPlayer ? GetColor(255, 220, 0) : GetColor(255, 255, 255);
+    if(dead)
+        nameColor = GetColor(130, 130, 130);
+
+    DrawTextWithShadow(x, textY, entry.label.c_str(), nameColor);
+
+    //HP numbers on the right, or K.O. when dead(右にHPの数字。死んでいたらK.O.)
+    std::string hpText = dead ? "K.O." : std::to_string(stats.GetHP()) + "/" + std::to_string(stats.GetMaxHP());
+    int         textW  = GetDrawStringWidth(hpText.c_str(), (int)hpText.size());
+
+    DrawTextWithShadow(x + w - textW, textY, hpText.c_str(), dead ? GetColor(230, 40, 40) : GetColor(255, 255, 255));
+
+    //Bar: background, HP fill, border. Same look as the old player bar(バー：背景・HP・枠。前のプレイヤーのバーと同じ見た目)
+    DrawBox(x, barY, x + w, barY + h, GetColor(50, 50, 50), TRUE);
+
+    int fillW = (int)(w * ratio);
+    if(!dead && fillW < 2)
+        fillW = 2;    //Still alive = always show a tiny bit(生きている間は少しだけ必ず見せる)
+
+    if(!dead)
+        DrawBox(x, barY, x + fillW, barY + h, GetHpBarColor(ratio), TRUE);
+
+    DrawBox(x, barY, x + w, barY + h, GetColor(255, 255, 255), FALSE);
+
+    //Speed potion active: cyan outline and a thin timer line under the bar(スピードポーション中：水色の外枠と、バーの下に残り時間の細い線)
+    if(stats.HasSpeedBuff()) {
+        unsigned int cyan = GetColor(0, 220, 255);
+        DrawBox(x - 1, barY - 1, x + w + 1, barY + h + 1, cyan, FALSE);
+        DrawBox(x, barY + h + 3, x + (int)(w * stats.GetSpeedBuffRatio()), barY + h + 6, cyan, TRUE);
+    }
+}
+}    // namespace
 
 namespace PoittersPoint {
 //! @brief 初期化 / Initialize
@@ -42,7 +116,7 @@ bool Player::Init()
 
     auto col = AddComponent<ComponentCollisionCapsule>()    //
                    ->SetRadius(3.0f)
-                   ->SetHeight(13.0f);
+                   ->SetHeight(23.4f);
 
     col->UseGravity();
     col->SetCollisionGroup(ComponentCollision::CollisionGroup::PLAYER);
@@ -174,19 +248,12 @@ void Player::Update()
     }
 }
 
-void Player::TakeDamage(int dmg)
-{
-    // Damage handling for Poitters Point style HP / ダメージ処理
-    if(auto stats = GetComponent<ComponentCharacterStats>())
-        stats->TakeDamage(dmg);
-}
-
 void Player::PostDraw()
 {
     //Always show who the player is(いつもプレイヤーが誰か分かるように表示する)
     DrawPlayerMarker();
     DrawPickUpIcon();
-    DrawHpBar();
+    DrawHpHud();
 }
 
 void Player::DrawPickUpIcon()
@@ -207,24 +274,43 @@ void Player::DrawPickUpIcon()
     DrawRotaGraphF(screen_pos.x, screen_pos.y, 0.05f, 0.0f, UI_key_e, 1);
 }
 
-void Player::DrawHpBar()
+void Player::DrawHpHud()
 {
-    auto stats = GetComponent<ComponentCharacterStats>();
-    if(!stats)
+    //Collect everyone who has HP. The player is always first (left), then the NPCs(HPを持つ全員を集める。プレイヤーが一番左、そのあとNPC)
+    std::vector<HpEntry> entries;
+
+    if(auto myStats = GetComponent<ComponentCharacterStats>())
+        entries.push_back({"PLAYER", myStats, true});
+
+    int npcNumber = 1;    //Shown as NPC 1, NPC 2... (NPCの名前は増え続けるので、表示は1から数え直す)
+    for(auto& npc : Scene::GetObjectsPtr<PoittersPoint::Npc>()) {
+        if(auto npcStats = npc->GetComponent<ComponentCharacterStats>())
+            entries.push_back({"NPC " + std::to_string(npcNumber), npcStats, false});
+
+        npcNumber++;
+    }
+
+    if(entries.empty())
         return;
 
-    //Bar position and size in pixels(バーの位置と大きさ(ピクセル))
-    int x = 20;
-    int y = 20;
-    int w = 200;
-    int h = 20;
+    //Layout in pixels(レイアウト(ピクセル))
+    const int barH   = 18;    //Bar height(バーの高さ)
+    const int gap    = 30;    //Space between panels(パネルの間隔)
+    const int margin = 20;    //Space from the screen edge(画面の端からの余白)
+    int       count  = (int)entries.size();
 
-    DrawBox(x, y, x + w, y + h, GetColor(50, 50, 50), TRUE);                                //Background(背景)
-    DrawBox(x, y, x + (int)(w * stats->GetHPRatio()), y + h, GetColor(255, 0, 0), TRUE);    //HP(HP)
-    DrawBox(x, y, x + w, y + h, GetColor(255, 255, 255), FALSE);                            //Border(枠)
+    //Each panel is 200px like before, but gets smaller if the window is too narrow(1パネル200pxだが、画面が狭い時は小さくする)
+    int panelW = 200;
+    int maxW   = (WINDOW_W - margin * 2 - gap * (count - 1)) / count;
+    if(panelW > maxW)
+        panelW = maxW;
 
-    //DrawFormatString works like printf, so no sprintf buffer is needed(DrawFormatStringはprintfと同じ書き方なので、sprintfのバッファは不要)
-    DrawFormatString(x + w + 10, y + 3, GetColor(255, 255, 255), "HP: %d/%d", stats->GetHP(), stats->GetMaxHP());
+    //Center the whole row, put it at the bottom(列全体を中央にそろえて、画面の下に置く)
+    int totalW = panelW * count + gap * (count - 1);
+    int startX = (WINDOW_W - totalW) / 2;
+    int barY   = WINDOW_H - margin - barH;
+
+    for(int i = 0; i < count; ++i) DrawHpPanel(startX + i * (panelW + gap), barY, panelW, barH, entries[i]);
 }
 
 void Player::DrawPlayerMarker()

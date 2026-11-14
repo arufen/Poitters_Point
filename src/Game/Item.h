@@ -2,6 +2,7 @@
 //!	@file	PoittersPoint_Item.h
 //! @brief	PoittersPoint_Item
 //---------------------------------------------------------------------------
+#pragma once
 #include <System/Scene.h>
 #include <string>
 
@@ -33,6 +34,9 @@ public:
     float              GetSize() const { return size_; }
     const std::string& GetItemName() const { return itemName_; }
     void               RandomizeStats();
+
+    //Damage this item deals when thrown at a character. Heavier = more damage(投げて当たった時のダメージ。重いほど大きい)
+    int GetDamage() const;
 
 private:
     WeightType  weightType_ = WeightType::Medium;

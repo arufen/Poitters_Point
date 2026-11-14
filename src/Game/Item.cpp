@@ -6,8 +6,7 @@
 #include "Item.h"
 #include "MainStage.h"
 #include "Component/ComponentItemPickUp.h"
-#include "Player.h"
-#include "Npc.h"
+#include "Component/ComponentCharacterStats.h"
 //! @brief 初期化 / Initialize
 //! @return 初期化終了 / Initialization finished
 namespace PoittersPoint {
@@ -19,7 +18,7 @@ bool Item::Init()
     SetName("Item");
 
     //auto Item = Scene::Object::Create<Object>("Item");
-    auto model = AddComponent<ComponentModel>("data/Game/Models/Test/Box2.mv1");
+    auto model = AddComponent<ComponentModel>("data/Game/Models/Object/ThorwRock2.mv1");
 
     // Randomize item stats / アイテムごとに固有のステータスをランダム化
     RandomizeStats();
@@ -83,62 +82,37 @@ void Item::RandomizeStats()
     SetName(itemName_);
 }
 
-// 当たり判定が行われたときに呼ばれる関数
+int Item::GetDamage() const
+{
+    //Light about 1, Medium about 2, Heavy about 3-5 (at least 1)(軽い物は約1、普通は約2、重い物は約3〜5。最低1)
+    int dmg = (int)(weight_ * 1.5f + 0.5f);
+    if(dmg < 1)
+        dmg = 1;
+    return dmg;
+}
+
+// 当たり判定が行われたときに呼ばれる関数 / Called when collision occurs
 void Item::OnHit(const ComponentCollision::HitInfo& hit_info)
 {
-    auto name = hit_info.hit_collision_->GetOwner()->GetNameDefault();
+    Object* other  = hit_info.hit_collision_->GetOwner();
+    auto    name   = other->GetNameDefault();
+    auto    pickup = GetComponent<ComponentItemPickUp>();
+
     if(name == "Ground") {
-        // tell the pickup component it landed, so it can stop moving
-        if(auto pickup = GetComponent<ComponentItemPickUp>())
+        //Tell the pickup component it landed, so it can stop moving(着地したことを拾うコンポーネントに伝えて、動きを止める)
+        if(pickup)
             pickup->OnLanded();
     }
-    else if(name == "Player") {
-        // If item is thrown and hits player, deal damage
-        auto pickup = GetComponent<ComponentItemPickUp>();
-        if(pickup && pickup->IsThrown()) {
-            // Calculate damage based on weight
-            int dmg = 1;
-            if(weightType_ == WeightType::Light)
-                dmg = 1;
-            else if(weightType_ == WeightType::Medium)
-                dmg = 2;
-            else if(weightType_ == WeightType::Heavy)
-                dmg = 3;
-            // Scale by weight value
-            dmg = (int)(dmg * weight_ / 1.0f);
-            if(dmg < 1)
-                dmg = 1;
-            if(dmg > 5)
-                dmg = 5;
-
-            if(auto player = dynamic_cast<Player*>(hit_info.hit_collision_->GetOwner())) {
-                player->TakeDamage(dmg);
+    else if(pickup && pickup->CanDealDamage()) {
+        //Never hurt the one who threw it(投げた本人にはダメージを与えない)
+        if(other != pickup->GetThrower()) {
+            //Anyone with ComponentCharacterStats can be hurt. No name check, so Player, Npc0, Npc1... all work
+            //(ComponentCharacterStatsを持っていれば誰でもダメージを受ける。名前は見ないので、Player・Npc0・Npc1...全部OK)
+            if(auto stats = other->GetComponent<ComponentCharacterStats>()) {
+                //TakeDamage returns false if the target is already dead, so the item passes through(すでに死んでいたらfalseなので、アイテムはそのまま通り抜ける)
+                if(stats->TakeDamage(GetDamage()))
+                    pickup->OnHitCharacter();
             }
-            pickup->OnLanded();
-        }
-    }
-    else if(name == "Npc") {
-        // If item is thrown and hits NPC, deal damage
-        auto pickup = GetComponent<ComponentItemPickUp>();
-        if(pickup && pickup->IsThrown()) {
-            // Calculate damage based on weight
-            int dmg = 1;
-            if(weightType_ == WeightType::Light)
-                dmg = 1;
-            else if(weightType_ == WeightType::Medium)
-                dmg = 2;
-            else if(weightType_ == WeightType::Heavy)
-                dmg = 3;
-            dmg = (int)(dmg * weight_ / 1.0f);
-            if(dmg < 1)
-                dmg = 1;
-            if(dmg > 5)
-                dmg = 5;
-
-            if(auto npc = dynamic_cast<Npc*>(hit_info.hit_collision_->GetOwner())) {
-                npc->TakeDamage(dmg);
-            }
-            pickup->OnLanded();
         }
     }
 

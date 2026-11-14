@@ -29,12 +29,23 @@ public:
     bool IsHeld() const { return isHeld_; }
     bool IsThrown() const { return isThrown_; }
 
+    //True only while flying and before it hit anyone(飛んでいる間で、まだ誰にも当たっていない時だけtrue)
+    bool CanDealDamage() const { return isThrown_ && !hasHit_; }
+
+    //Who threw this item. Only compare it, never use it as a live pointer(誰が投げたか。比較にだけ使い、そのまま触らない)
+    const Object* GetThrower() const { return thrower_; }
+
+    //Item calls this after it hurt a character. Only one hit per throw, and it loses most sideways speed(キャラに当たってダメージを与えた後にアイテムが呼ぶ。1回の投げで1回だけ当たり、横の速度はほぼなくなる)
+    void OnHitCharacter();
+
 private:
     bool    isHeld_     = false;
     bool    isThrown_   = false;                 //!< true while flying in the air(空中を飛んでいる間true)
     bool    isGround_   = false;                 //!< true once it touched the ground(地面に触れたらtrue)
     float3  velocity_   = {0.0f, 0.0f, 0.0f};    //!< speed and direction while thrown(投げている間の速度と方向)
     Object* holder_     = nullptr;               //!< the player holding this item(このアイテムを持っているプレイヤー)
+    Object* thrower_    = nullptr;               //!< who threw it last, used to skip self-hit(最後に投げた人。自分に当たるのを防ぐために使う)
+    bool    hasHit_     = false;    //!< true after it hurt someone, so it hits once per throw(誰かにダメージを与えたらtrue。1回の投げで1回だけ当たる)
     float   throwSpeed_ = 100.0f;
     float   upBoost_    = 20.0f;
     float   gravity_    = 150.0f;
