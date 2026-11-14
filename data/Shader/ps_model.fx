@@ -41,7 +41,9 @@ PS_OUTPUT main(PS_INPUT_MODEL input)
     // アルファテスト
 	if(textureColor.a < 0.5) discard;
 
-	output.color0_ = textureColor; // * input.diffuse_;
+	// Multiply by the MV1 material diffuse color, so models without a texture are not white
+	// (MV1マテリアルのDiffuseカラーを掛ける。テクスチャなしのモデルが白くならないようにする)
+	output.color0_ = textureColor * DxLib_Common.Material.Diffuse;
 
 	// 出力パラメータを返す
 	return output;
