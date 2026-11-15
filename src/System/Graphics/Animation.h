@@ -78,6 +78,14 @@ public:
     //! @retval false   失敗(nameで指定した名前が見つからなかった場合)
     bool play(std::string_view name, bool is_loop = false, f32 blend_time = 1.0f, f32 start_time = 0.0f);
 
+    //  アニメーションの再生速度を設定する
+    //  再生中であっても次の更新から速度が反映される
+    //! @param  [in]    name    アニメーション名
+    //! @param  [in]    speed   再生速度(default:1.0f)
+    //! @retval true    成功(正常終了)
+    //! @retval false    失敗(nameで指定した名前が見つからなかった場合)
+    bool setAnimationSpeed(std::string_view name, f32 speed);
+
     // アニメーションを一時停止する
     //! @param  [in]    active  停止フラグ(true:停止 false:再開)
     void pause(bool active = true);
@@ -87,6 +95,11 @@ public:
     //! @name   取得
     //----------------------------------------------------------
     //@{
+
+    //! アニメーションの総再生時間を取得(アニメーション名指定)
+    //! @param  [in]    name    アニメーション名
+    //! @return 速度1.0fのときの総再生時間(秒)。見つからなければ0.0f
+    f32 animationTotalTime(std::string_view name) const;
 
     //! [DxLib] モデル用MV1ハンドルを取得
     int model_mv1_handle() const;

@@ -113,9 +113,33 @@ void ComponentPlayerPickUpTrigger::PickUpItem()
             pickup->OnPickedUp(GetOwner());
             heldItem_ = item;
 
-            //Lift time depends on item weight and our strength. No stats = no waiting(持ち上げ時間はアイテムの重さと自分の筋力で決まる。ステータスがなければ待たない)
+            //Lifting time scales with object size (bigger = slower) and strength(持ち上げ時間は物の大きさ(大きいほど遅い)と筋力で決まる)
+            float size = item->GetSize();
+            if(size < liftSizeMin_)
+                size = liftSizeMin_;
+            if(size > liftSizeMax_)
+                size = liftSizeMax_;
+
+            //Small = 0.0, big = 1.0(小さい物=0.0、大きい物=1.0)
+            float t = (liftSizeMax_ > liftSizeMin_) ? (size - liftSizeMin_) / (liftSizeMax_ - liftSizeMin_) : 0.0f;
+
+            float duration = liftDurationMin_ + (liftDurationMax_ - liftDurationMin_) * t;
+
+            //Stronger characters lift faster(筋力が高いほど早く持ち上げられる)
             auto stats = GetOwner()->GetComponent<ComponentCharacterStats>();
-            liftTotal_ = stats ? stats->GetLiftTime(item->GetWeight()) : 0.0f;
+            if(stats) {
+                float strength = stats->GetStrength();
+                if(strength < 0.1f)
+                    strength = 0.1f;
+                duration /= strength;
+            }
+
+            if(duration < liftDurationClampMin_)
+                duration = liftDurationClampMin_;
+            if(duration > liftDurationClampMax_)
+                duration = liftDurationClampMax_;
+
+            liftTotal_ = duration;
             liftTimer_ = liftTotal_;
 
             break;    // only grab one item per frame
@@ -156,6 +180,14 @@ void ComponentPlayerPickUpTrigger::GUI()
             ImGui::Text(HasItem() ? "Holding item" : "Empty handed");
             ImGui::Text("Lift time : %.2f / %.2f", liftTimer_, liftTotal_);
             ImGui::DragFloat("Pickup Range", &pickupRange_, 0.5f, 0.0f, 100.0f);
+
+            //Size -> lifting time(大きさ -> 持ち上げ時間)
+            ImGui::DragFloat(u8"最小の大きさ", &liftSizeMin_, 0.01f, 0.0f, 2.0f);
+            ImGui::DragFloat(u8"最大の大きさ", &liftSizeMax_, 0.01f, 0.0f, 2.0f);
+            ImGui::DragFloat(u8"小さい物の持ち上げ時間", &liftDurationMin_, 0.05f, 0.0f, 5.0f);
+            ImGui::DragFloat(u8"大きい物の持ち上げ時間", &liftDurationMax_, 0.05f, 0.0f, 5.0f);
+            ImGui::DragFloat(u8"持ち上げ時間 下限", &liftDurationClampMin_, 0.05f, 0.0f, 5.0f);
+            ImGui::DragFloat(u8"持ち上げ時間 上限", &liftDurationClampMax_, 0.05f, 0.0f, 5.0f);
 
             // GUI上でオーナーから自分(SampleObjectController)を削除します
             if(ImGui::Button(u8"削除"))

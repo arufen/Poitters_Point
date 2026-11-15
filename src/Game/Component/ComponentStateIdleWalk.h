@@ -25,6 +25,9 @@ public:
     inline const void  SetFrontRotate(float rotate) { front_rot_ = rotate; }
     inline const float GetFrontRotate() const { return front_rot_; }
 
+    //! @brief idle/walkアニメーションの再生を有効/無効にする(持ち歩きアニメ等を上書きしないため)
+    inline void SetAnimationsEnabled(bool enabled) { animations_enabled_ = enabled; }
+
     void GUI() override;
 
 private:
@@ -37,6 +40,8 @@ private:
     int key_right_ = KEY_INPUT_D;
 
     float front_rot_ = 0.0f;    //!<前方ベクトルの回転角度(0-360度)
+
+    bool animations_enabled_ = true;    //!<idle/walkアニメーション再生の有効フラグ
 
     //--------------------------------------------------------------------
     //! @name Cereal処理

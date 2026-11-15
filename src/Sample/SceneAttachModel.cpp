@@ -42,7 +42,7 @@ bool SceneAttachModel::Init()
         model->SetScaleAxisXYZ({10.0f, 10.0f, 10.0f});
 
 #if 1    // コンポーネントでシェーダーファイルを指定する \
-		 // マテリアル0 を作成
+         // マテリアル0 を作成
         ComponentModel::Material mat0;
         mat0.SetDiffuse("data/Sample/FPS_Knife/Knife_low_Iron.001_BaseColor.png");
         mat0.SetNormal("data/Sample/FPS_Knife/Knife_low_Iron.001_NormalOpenGLl.png");
