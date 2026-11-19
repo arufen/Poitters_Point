@@ -1,0 +1,50 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build Project (Debug)",
+            "type": "shell",
+            "command": ".\\@build.cmd Debug",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Build Project (Release)",
+            "type": "shell",
+            "command": ".\\@build.cmd Release",
+            "group": "build",
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Build Project (ReleaseLTCG)",
+            "type": "shell",
+            "command": ".\\@build.cmd ReleaseLTCG",
+            "group": "build",
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Generate Projects (premake)",
+            "type": "shell",
+            "command": ".\\@make.cmd",
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "Open in Visual Studio",
+            "type": "shell",
+            "command": ".\\@open.cmd",
+            "group": "none",
+            "problemMatcher": []
+        },
+        {
+            "label": "Clean Project",
+            "type": "shell",
+            "command": ".\\@cleanup.cmd",
+            "group": "none",
+            "problemMatcher": []
+        }
+    ]
+}

@@ -7,6 +7,12 @@
 #include <string>
 
 namespace PoittersPoint {
+
+//Forward declaration. The full list is in StageConfig.h(前方宣言。中身はStageConfig.hにある)
+namespace StageConfig {
+enum class ItemType : int;
+}
+
 USING_PTR(Item);
 class Item : public Object
 {
@@ -28,20 +34,27 @@ public:
         Heavy      // 重い / Heavy
     };
 
-    WeightType GetWeightType() const { return weightType_; }
-    float      GetWeight() const { return weight_; }
-    //Object size (model scale). Used to scale the lifting animation(オブジェクトの大きさ(モデルのスケール)。持ち上げアニメーションの速さに使う)
+    //Set what this item is (model, weight, size, collision all come from StageConfig.h). Call right after Create, it is chainable
+    //Init() already sets Cobblestone, so an Item made without this is a cobblestone
+    //(このアイテムが何かを決める(モデル・重さ・大きさ・当たり判定はStageConfig.hから)。Createの直後に呼ぶ。つなげて呼べる
+    // Init()でもう丸石にしているので、これを呼ばずに作ったItemは丸石になる)
+    ItemPtr SetItemType(StageConfig::ItemType type);
+
+    StageConfig::ItemType GetItemType() const { return type_; }
+    WeightType            GetWeightType() const { return weightType_; }
+    float                 GetWeight() const { return weight_; }
+    //Object size (object scale). Used to scale the lifting animation(オブジェクトの大きさ(オブジェクトのスケール)。持ち上げアニメーションの速さに使う)
     float              GetSize() const { return size_; }
     const std::string& GetItemName() const { return itemName_; }
-    void               RandomizeStats();
 
     //Damage this item deals when thrown at a character. Heavier = more damage(投げて当たった時のダメージ。重いほど大きい)
     int GetDamage() const;
 
 private:
-    WeightType  weightType_ = WeightType::Medium;
-    float       weight_     = 1.0f;
-    float       size_       = 0.5f;    //Model scale set in Init(Initで設定したモデルのスケール)
-    std::string itemName_;
+    StageConfig::ItemType type_{};    //0 = Cobblestone(0は丸石)
+    WeightType            weightType_ = WeightType::Medium;
+    float                 weight_     = 1.0f;
+    float                 size_       = 0.5f;    //Object scale set by SetItemType(SetItemTypeで設定したオブジェクトのスケール)
+    std::string           itemName_;
 };
 }    // namespace PoittersPoint

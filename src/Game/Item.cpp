@@ -1,85 +1,84 @@
 ﻿//---------------------------------------------------------------------------
-//!	@file	PoittersPoint_Player.cpp
-//! @brief	PoittersPoint_Player
+//!	@file	PoittersPoint_Item.cpp
+//! @brief	PoittersPoint_Item
 //---------------------------------------------------------------------------
 
 #include "Item.h"
+#include "StageConfig.h"
 #include "MainStage.h"
 #include "Component/ComponentItemPickUp.h"
 #include "Component/ComponentCharacterStats.h"
-//! @brief 初期化 / Initialize
-//! @return 初期化終了 / Initialization finished
+#include "Component/ComponentArenaBounds.h"
+#include <System/Component/ComponentModel.h>
+#include <System/Component/ComponentCollisionCapsule.h>
+#include <string>
+
 namespace PoittersPoint {
 
+//! @brief 初期化 / Initialize
+//! @return 初期化終了 / Initialization finished
 bool Item::Init()
 {
     Super::Init();
 
-    SetName("Item");
-
-    //auto Item = Scene::Object::Create<Object>("Item");
-    auto model = AddComponent<ComponentModel>("data/Game/Models/Object/ThorwRock2.mv1");
-
-    // Randomize item stats / アイテムごとに固有のステータスをランダム化
-    RandomizeStats();
-
-    //Collision (use capsule due to bug of using CollissionBox)
-    // //コリジョン（CollisionBoxのバグのためカプセルを使用）
+    //Collision (use capsule due to bug of using CollissionBox). Size is set by SetItemType
+    //(コリジョン（CollisionBoxのバグのためカプセルを使用）。大きさはSetItemTypeで設定する)
     auto collision = AddComponent<ComponentCollisionCapsule>();
-    collision->SetHeight(26.0f);
-    collision->SetRadius(10.0f);
-    collision->SetTranslate(float3(0.0f, -10.0f, 0.0f));
     collision->UseGravity(true);
     collision->SetCollisionGroup(ComponentCollision::CollisionGroup::ENEMY);
 
-    //Position - will be placed by spawner / 配置はスポナー側で行う想定
+    //Position - placed by the spawner / 配置はスポナー側で行う
     float3 pos = {0.0f, 50.0f, 0.0f};
     SetTranslate(pos);
-    // Scale based on weight/status (smaller or bigger depending on status) / 重さに応じて大きさを調整（モデル未実装のためまずはスケールで表現）
-    float scaleFactor = 0.4f;
-    if(weightType_ == WeightType::Light)
-        scaleFactor = 0.3f + (GetRand(10) * 0.01f);
-    else if(weightType_ == WeightType::Medium)
-        scaleFactor = 0.5f + (GetRand(10) * 0.01f);
-    else if(weightType_ == WeightType::Heavy)
-        scaleFactor = 0.7f + (GetRand(15) * 0.01f);
-    float3 size = {scaleFactor, scaleFactor, scaleFactor};
-    SetScaleAxisXYZ(size);
-    size_ = scaleFactor;    //Remember the object size so the lifting animation can match it(持ち上げアニメーションが物のに合わせて速さを決めるよう大きさを記録)
 
     //Component
     AddComponent<ComponentItemPickUp>();
 
+    //Invisible wall, so the item can not fall off the stage(見えない壁。ステージから落ちないように)
+    AddComponent<ComponentArenaBounds>();
+
+    //Default type. The spawner calls SetItemType again with the real type(デフォルトの種類。スポナーが本当の種類でもう一度SetItemTypeを呼ぶ)
+    SetItemType(StageConfig::ItemType::Cobblestone);
+
     return true;
 }
 
-void Item::RandomizeStats()
+ItemPtr Item::SetItemType(StageConfig::ItemType type)
 {
-    // Randomize weight and give unique name/identity / ランダムに重さを決定し固有の名前を付与
-    int r = GetRand(99);
-    if(r < 30) {
-        // Light / 軽い
-        weightType_ = WeightType::Light;
-        weight_     = 0.5f + (GetRand(40) * 0.01f);
-        itemName_   = "LightItem";
-    }
-    else if(r < 75) {
-        // Medium / 普通
-        weightType_ = WeightType::Medium;
-        weight_     = 1.0f + (GetRand(60) * 0.01f);
-        itemName_   = "MediumItem";
-    }
-    else {
-        // Heavy / 重い
-        weightType_ = WeightType::Heavy;
-        weight_     = 2.0f + (GetRand(100) * 0.01f);
-        itemName_   = "HeavyItem";
-    }
-    // Append unique number / 固有番号を追加
+    const auto& def = StageConfig::GetItemDef(type);
+
+    type_       = type;
+    weightType_ = def.weightType;
+    weight_     = def.weight;
+    size_       = def.objectScale;
+
+    //Unique name like "Obsidian_3". The hand attach finds objects by NAME, so it must not be the same as others
+    //(「Obsidian_3」のような固有の名前。手にくっつける処理は名前で探すので、他と同じ名前にしない)
     static int itemCount = 0;
     itemCount++;
-    itemName_ += "_" + std::to_string(itemCount);
+    itemName_ = std::string(def.name) + "_" + std::to_string(itemCount);
     SetName(itemName_);
+
+    //Swap the model(モデルを入れ替える)
+    RemoveComponent<ComponentModel>();
+    auto model = AddComponent<ComponentModel>(def.model);
+    //modelScale 1.0 = engine default 0.1(modelScaleの1.0＝エンジンのデフォルト0.1)
+    float  ms         = def.modelScale * StageConfig::MODEL_BASE_SCALE;
+    float3 modelScale = {ms, ms, ms};
+    model->SetScaleAxisXYZ(modelScale);
+
+    //Object size(オブジェクトの大きさ)
+    float3 size = {def.objectScale, def.objectScale, def.objectScale};
+    SetScaleAxisXYZ(size);
+
+    //Collision size for this model(このモデルに合った当たり判定の大きさ)
+    if(auto col = GetComponent<ComponentCollisionCapsule>()) {
+        col->SetRadius(def.colRadius);
+        col->SetHeight(def.colHeight);
+        col->SetTranslate(float3(0.0f, def.colOffsetY, 0.0f));
+    }
+
+    return std::static_pointer_cast<Item>(shared_from_this());
 }
 
 int Item::GetDamage() const

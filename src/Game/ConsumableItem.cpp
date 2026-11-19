@@ -5,6 +5,7 @@
 
 #include "ConsumableItem.h"
 #include "Component/ComponentConsumableItem.h"
+#include "Component/ComponentArenaBounds.h"
 #include <System/Component/ComponentModel.h>
 #include <System/Component/ComponentCollisionCapsule.h>
 
@@ -58,6 +59,9 @@ bool ConsumableItem::Init()
 
     //The behavior: collect when a character comes close(動き：キャラが近づいたら取られる)
     AddComponent<ComponentConsumableItem>()->SetItemType(type);
+
+    //Invisible wall, so items scattered by a chest stay on the stage(見えない壁。チェストから飛び出したアイテムもステージに残る)
+    AddComponent<ComponentArenaBounds>();
 
     return true;
 }
