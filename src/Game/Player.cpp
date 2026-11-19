@@ -12,6 +12,7 @@
 #include "Component/ComponentPlayerPickUpTrigger.h"
 #include "Component/ComponentArenaBounds.h"
 #include "Component/ComponentGroundShadow.h"
+#include "Component/ComponentMatch.h"
 #include "StageConfig.h"
 #include "Game/Component/ComponentStateIdleWalk.h"
 #include "Component/ComponentStateIdleWalk.h"
@@ -141,6 +142,16 @@ bool Player::Init()
 void Player::Update()
 {
     Super::Update();
+
+    //Frozen during the countdown, after K.O. and after the match ended: no walking, no pickup, no throw
+    //(カウントダウン中・K.O.後・試合終了後は動けない：歩けない、拾えない、投げられない)
+    if(!ComponentMatch::CanAct(this)) {
+        if(auto walk = GetComponent<ComponentStateIdleWalk>())
+            walk->SetStatus(Component::StatusBit::Enable, false);
+        if(auto mdl = GetComponent<ComponentModel>())
+            mdl->PlayAnimationNoSame("idle", true);
+        return;
+    }
 
     auto pickUpTrigger = GetComponent<ComponentPlayerPickUpTrigger>();
 

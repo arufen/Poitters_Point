@@ -238,6 +238,34 @@ void ComponentItemPickUp::OnPickedUp(Object* holder)
     throwGraceTimer_ = 0.2f;
 }
 
+void ComponentItemPickUp::OnDropped()
+{
+    if(!isHeld_)
+        return;
+
+    isHeld_   = false;
+    isThrown_ = false;    //Not a throw: no damage, no bounce(投げではない：ダメージもバウンドもなし)
+
+    //Start a bit above the holder's feet, so it falls next to them(持ち主の足元の少し上から始めて、すぐそばに落ちる)
+    float3 pos = GetOwner()->GetTranslate();
+    if(holder_) {
+        pos    = holder_->GetTranslate();
+        pos.y += throwHeight_;
+    }
+
+    //Detach from the hand and stand up straight(手から外して、まっすぐにする)
+    GetOwner()->RemoveComponent<ComponentAttachModel>();
+    ResetRotation();
+    ResetSpin();
+    GetOwner()->SetTranslate(pos);
+
+    //Collision back on: the item's gravity drops it onto the floor(当たり判定を戻す：アイテムの重力で床に落ちる)
+    if(auto col = GetOwner()->GetComponent<ComponentCollision>())
+        col->SetStatus(Component::StatusBit::Enable, true);
+
+    holder_ = nullptr;
+}
+
 void ComponentItemPickUp::ResetRotation()
 {
     float3 zero{0.0f, 0.0f, 0.0f};

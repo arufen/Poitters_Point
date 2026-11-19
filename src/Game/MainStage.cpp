@@ -12,6 +12,7 @@
 #include "ConsumableItem.h"
 
 #include "MainCamera.h"
+#include "Component/ComponentMatch.h"
 //#include "TutorialX_Enemy.h"
 
 namespace PoittersPoint {
@@ -54,6 +55,11 @@ bool PoittersPoint_MainStage::Init()
             consumable->SetTranslate({rx, 60.0f, rz});
         }
     }
+
+    //The match: countdown, timer, game over -> Result scene. Created last, after all the characters
+    //(試合：カウントダウン、タイマー、ゲームオーバー→Resultシーン。キャラを全員作った後、最後に作る)
+    if(auto match = Scene::Object::Create<::Object>("Match"))
+        match->AddComponent<ComponentMatch>();
 
     return true;
 }

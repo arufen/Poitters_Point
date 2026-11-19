@@ -10,6 +10,7 @@
 #include "Component/ComponentPlayerPickUpTrigger.h"
 #include "Component/ComponentArenaBounds.h"
 #include "Component/ComponentGroundShadow.h"
+#include "Component/ComponentMatch.h"
 #include "StageConfig.h"
 #include <cmath>
 #include <string>
@@ -68,6 +69,12 @@ bool Npc::Init()
 void Npc::Update()
 {
     Super::Update();
+
+    //Frozen during the countdown, after K.O. and after the match ended(カウントダウン中・K.O.後・試合終了後は動かない)
+    if(!ComponentMatch::CanAct(this)) {
+        StopMove();
+        return;
+    }
 
     switch(state_) {
     case State::SearchItem:
