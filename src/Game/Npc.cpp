@@ -9,6 +9,8 @@
 #include "Component/ComponentCharacterStats.h"
 #include "Component/ComponentPlayerPickUpTrigger.h"
 #include "Component/ComponentArenaBounds.h"
+#include "Component/ComponentGroundShadow.h"
+#include "StageConfig.h"
 #include <cmath>
 #include <string>
 
@@ -56,6 +58,9 @@ bool Npc::Init()
 
     //Invisible wall, so the NPC can not fall off the stage(見えない壁。NPCがステージから落ちないように)
     AddComponent<ComponentArenaBounds>();
+
+    //Round shadow under the feet, cast onto the floor(床に落とす足元の丸い影)
+    AddComponent<ComponentGroundShadow>()->SetRadius(StageConfig::NPC_SHADOW_RADIUS);
 
     return true;
 }

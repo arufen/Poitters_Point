@@ -200,6 +200,37 @@ inline constexpr float    MARKER_RADIUS  = 14.0f;    //Ground marker size(地面
 //@}
 
 //--------------------------------------------------------------------
+//! @name Pickup look (consumables float, throwables never do)(拾うアイテムの見た目(消費アイテムは浮く、投げる物は浮かない))
+//--------------------------------------------------------------------
+//@{
+//Only the MODEL moves, so pickup range and collision stay where they were(動くのはモデルだけなので、拾える範囲と当たり判定は変わらない)
+inline constexpr float FLOAT_LIFT       = 4.0f;     //Middle height of the bob above its resting spot(浮き沈みの真ん中の高さ)
+inline constexpr float FLOAT_AMPLITUDE  = 2.5f;     //How far it moves up and down from the middle(真ん中から上下に動く幅)
+inline constexpr float FLOAT_SPEED      = 0.6f;     //Bobs per second(1秒あたりの浮き沈みの回数)
+inline constexpr float FLOAT_SPIN_SPEED = 90.0f;    //Slow turn, degrees per second(ゆっくり回る速さ(度/秒))
+inline constexpr float FLOAT_SHADOW_SHRINK =
+    0.3f;    //Shadow is this much smaller at the top of the bob. 0.3 = 30%(浮き沈みの一番上で影がこれだけ小さくなる。0.3＝30%)
+//@}
+
+//--------------------------------------------------------------------
+//! @name Ground shadows(地面の影)
+//--------------------------------------------------------------------
+//@{
+inline constexpr int SHADOW_ALPHA = 110;    //0 = invisible, 255 = solid black(0＝見えない、255＝真っ黒)
+
+//The shadow casts a line straight down onto the Ground model, so it always sits on the floor and tilts with ramps
+//(影は真下のGroundモデルへ線を飛ばすので、いつも床の上にあり、坂では傾く)
+inline constexpr float SHADOW_RAY_START_UP =
+    10.0f;    //Line starts this far above the object (works even if it sinks a little)(線はオブジェクトのこれだけ上から始まる(少しめり込んでも動く))
+inline constexpr float SHADOW_RAY_LENGTH = 300.0f;    //How far down to look for the floor(床をどこまで下に探すか)
+inline constexpr float SHADOW_LIFT       = 0.3f;      //Lift above the floor so it does not flicker inside it(床の中でちらつかないように浮かせる高さ)
+
+inline constexpr float CONSUMABLE_SHADOW_RADIUS = 7.0f;
+inline constexpr float PLAYER_SHADOW_RADIUS     = 6.0f;
+inline constexpr float NPC_SHADOW_RADIUS        = 6.0f;
+//@}
+
+//--------------------------------------------------------------------
 //! @name TNT
 //--------------------------------------------------------------------
 //@{
