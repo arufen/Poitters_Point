@@ -11,6 +11,8 @@
 #include "Component/ComponentPlayerState.h"
 #include "Component/ComponentPlayerPickUpTrigger.h"
 #include "Component/ComponentArenaBounds.h"
+#include "Component/ComponentGroundShadow.h"
+#include "StageConfig.h"
 #include "Game/Component/ComponentStateIdleWalk.h"
 #include "Component/ComponentStateIdleWalk.h"
 #include <cstring>
@@ -126,6 +128,9 @@ bool Player::Init()
 
     //Invisible wall, so the player can not fall off the stage(見えない壁。プレイヤーがステージから落ちないように)
     AddComponent<ComponentArenaBounds>();
+
+    //Round shadow under the feet(足元の丸い影)
+    AddComponent<ComponentGroundShadow>()->SetRadius(StageConfig::PLAYER_SHADOW_RADIUS);
 
     //UI
     UI_key_e = LoadGraph("data/Game/UI/E_Key.png");

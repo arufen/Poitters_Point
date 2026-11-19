@@ -6,6 +6,9 @@
 #include "ConsumableItem.h"
 #include "Component/ComponentConsumableItem.h"
 #include "Component/ComponentArenaBounds.h"
+#include "Component/ComponentFloatingPickup.h"
+#include "Component/ComponentGroundShadow.h"
+#include "StageConfig.h"
 #include <System/Component/ComponentModel.h>
 #include <System/Component/ComponentCollisionCapsule.h>
 
@@ -62,6 +65,11 @@ bool ConsumableItem::Init()
 
     //Invisible wall, so items scattered by a chest stay on the stage(見えない壁。チェストから飛び出したアイテムもステージに残る)
     AddComponent<ComponentArenaBounds>();
+
+    //"Pick me up" look: the model floats and turns, with a shadow on the floor. Throwables never float, so players can tell them apart
+    //(「拾って」の見た目：モデルが浮いて回り、床に影が出る。投げる物は浮かないので、プレイヤーが見分けられる)
+    AddComponent<ComponentFloatingPickup>();
+    AddComponent<ComponentGroundShadow>()->SetRadius(PoittersPoint::StageConfig::CONSUMABLE_SHADOW_RADIUS);
 
     return true;
 }
