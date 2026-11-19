@@ -105,8 +105,8 @@ void ComponentPlayerPickUpTrigger::PickUpItem()
     auto items = Scene::GetObjectsPtr<PoittersPoint::Item>();
     for(auto& item : items) {
         auto pickup = item->GetComponent<ComponentItemPickUp>();
-        if(!pickup || pickup->IsHeld())
-            continue;    // no pickup component, or already held by someone else
+        if(!pickup || pickup->IsHeld() || pickup->IsThrown())
+            continue;    // no pickup component, held by someone else, or still flying/bouncing(飛んでいる・バウンド中は拾えない)
 
         float dist = length(item->GetTranslate() - GetOwner()->GetTranslate());
         if(dist <= pickupRange_) {
@@ -153,8 +153,8 @@ PoittersPoint::ItemPtr ComponentPlayerPickUpTrigger::GetNearbyItem()
     auto items = Scene::GetObjectsPtr<PoittersPoint::Item>();
     for(auto& item : items) {
         auto pickup = item->GetComponent<ComponentItemPickUp>();
-        if(!pickup || pickup->IsHeld())
-            continue;    // no pickup component, or already held by someone else
+        if(!pickup || pickup->IsHeld() || pickup->IsThrown())
+            continue;    // no pickup component, held by someone else, or still flying/bouncing(飛んでいる・バウンド中は拾えない)
 
         float dist = length(item->GetTranslate() - GetOwner()->GetTranslate());
         if(dist <= pickupRange_)

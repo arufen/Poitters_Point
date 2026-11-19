@@ -47,18 +47,21 @@ struct ItemDef
     float colRadius;     //Collision capsule radius(当たり判定カプセルの半径)
     float colHeight;     //Collision capsule height(当たり判定カプセルの高さ)
     float colOffsetY;    //Collision capsule up/down offset(当たり判定カプセルの上下のずれ)
+    float rotX;          //Model rotation offset in degrees, for models exported facing the wrong way(モデルの回転の補正(度)。向きがずれて出力されたモデル用)
+    float rotY;
+    float rotZ;
 };
 
 //Must be in the same order as ItemType!(ItemTypeと同じ順番にすること！)
 // clang-format off
 inline constexpr ItemDef ITEM_DEFS[] = {
-    //name           model                                          weightType                 weight objScale modelScale radius height offsetY
-    { "Cobblestone", "data/Game/Models/Object/ThorwRock2.mv1",      Item::WeightType::Medium,  1.3f,  0.55f,   1.0f,      10.0f, 26.0f, -10.0f },
-    { "IceBlock",    "data/Game/Models/Object/ThorwIce.mv1",        Item::WeightType::Medium,  1.3f,  0.55f,   1.0f,      10.0f, 26.0f, -10.0f },
-    { "Obsidian",    "data/Game/Models/Object/Thorwobsidian.mv1",   Item::WeightType::Heavy,   2.5f,  0.75f,   1.0f,      10.0f, 26.0f, -10.0f },
-    { "WoodPlank",   "data/Game/Models/Test/box2.mv1",              Item::WeightType::Light,   0.7f,  0.35f,   1.0f,      10.0f, 26.0f, -10.0f },    //No model yet, box2 for now(モデル未完成なので仮でbox2)
-    { "Chest",       "data/Game/Models/Item/Chest.mv1",             Item::WeightType::Medium,  1.3f,  0.5f,    80.0f,     16.44f,33.24f, -2.0f },    //Chest model is tiny, same 0.1*80 as before(チェストのモデルは小さいので、前と同じ0.1×80)
-    { "TNT",         "data/Game/Models/Object/ThorwTNT.mv1",        Item::WeightType::Medium,  1.3f,  0.55f,   1.0f,      10.0f, 26.0f, -10.0f },
+    //name           model                                          weightType                 weight objScale modelScale radius height offsetY  rotX   rotY   rotZ
+    { "Cobblestone", "data/Game/Models/Object/ThorwRock2.mv1",      Item::WeightType::Medium,  1.3f,  0.55f,   1.0f,      10.0f, 26.0f, -10.0f,  0.0f,  0.0f,  0.0f },
+    { "IceBlock",    "data/Game/Models/Object/ThorwIce.mv1",        Item::WeightType::Medium,  1.3f,  0.55f,   1.0f,      10.0f, 26.0f, -10.0f,  0.0f,  0.0f,  0.0f },
+    { "Obsidian",    "data/Game/Models/Object/Thorwobsidian.mv1",   Item::WeightType::Heavy,   2.5f,  0.75f,   1.0f,      10.0f, 26.0f, -10.0f,  0.0f,  0.0f,  0.0f },
+    { "WoodPlank",   "data/Game/Models/Test/box2.mv1",              Item::WeightType::Light,   0.7f,  0.35f,   1.0f,      10.0f, 26.0f, -10.0f,  0.0f,  0.0f,  0.0f },    //No model yet, box2 for now(モデル未完成なので仮でbox2)
+    { "Chest",       "data/Game/Models/Item/Chest.mv1",             Item::WeightType::Medium,  1.3f,  0.5f,    80.0f,     16.44f,33.24f, -2.0f,   0.0f,  90.0f,  0.0f },    //Chest model is tiny, same 0.1*80 as before. Set rotX/Y/Z to fix its facing(チェストのモデルは小さいので、前と同じ0.1×80。向きはrotX/Y/Zで直す)
+    { "TNT",         "data/Game/Models/Object/ThorwTNT.mv1",        Item::WeightType::Medium,  1.3f,  0.55f,   1.0f,      10.0f, 26.0f, -10.0f,  0.0f,  0.0f,  0.0f },
 };
 // clang-format on
 static_assert(std::size(ITEM_DEFS) == (size_t)ItemType::Count, "ITEM_DEFS must have one entry per ItemType(ITEM_DEFSはItemTypeごとに1つ必要)");
@@ -67,6 +70,50 @@ inline const ItemDef& GetItemDef(ItemType type)
 {
     return ITEM_DEFS[(int)type];
 }
+//@}
+
+//--------------------------------------------------------------------
+//! @name Bounce after a throw(投げた後のバウンド)
+//--------------------------------------------------------------------
+//@{
+
+//How a thrown item bounces on the ground. Lighter = bounces higher and slides further
+//(投げたアイテムが地面でどうバウンドするか。軽いほど高く跳ねて遠くまで滑る)
+struct BounceDef
+{
+    int   count;          //Max bounces before it stops(止まるまでの最大バウンド数)
+    float keepUp;         //Up speed kept after a bounce. 0.5 = half(バウンド後に残る上向きの速さ。0.5＝半分)
+    float keepForward;    //Forward speed kept after a bounce. The spin slows down the same way(バウンド後に残る前向きの速さ。回転も同じだけ遅くなる)
+    float spinSpeed;      //Tumble speed while flying, degrees per second (chest and TNT spin too)(飛んでいる間の回転の速さ(度/秒)。チェストとTNTも回る)
+};
+
+//Same order as Item::WeightType: Light, Medium, Heavy(Item::WeightTypeと同じ順番：軽い・普通・重い)
+// clang-format off
+inline constexpr BounceDef BOUNCE_BY_WEIGHT[] = {
+    //count keepUp keepForward spinSpeed
+    { 3,    0.6f,  0.75f,      720.0f },    //Light  (wood plank)(軽い：木材の板)
+    { 3,    0.5f,  0.65f,      540.0f },    //Medium (cobblestone, ice, chest, TNT)(普通：丸石・氷・チェスト・TNT)
+    { 3,    0.35f, 0.5f,       360.0f },    //Heavy  (obsidian)(重い：黒曜石)
+};
+// clang-format on
+
+inline const BounceDef& GetBounceDef(Item::WeightType weight)
+{
+    return BOUNCE_BY_WEIGHT[(int)weight];
+}
+
+//Chest and TNT explode on the first landing, so they never bounce(チェストとTNTは最初の着地で爆発するのでバウンドしない)
+inline constexpr bool CanBounce(ItemType type)
+{
+    return type != ItemType::Chest && type != ItemType::TNT;
+}
+
+//If the up speed after a bounce would be lower than this, it just stops (stops tiny jitter bounces)
+//(バウンド後の上向きの速さがこれより小さいなら、そのまま止まる(小さすぎるガタガタしたバウンドを防ぐ))
+inline constexpr float BOUNCE_MIN_SPEED = 5.0f;
+
+//Speed kept when a thrown item bounces off the arena wall. 0.6 = 60%(投げたアイテムがアリーナの壁で跳ね返る時に残る速さ。0.6＝60%)
+inline constexpr float WALL_BOUNCE_KEEP = 0.6f;
 //@}
 
 //--------------------------------------------------------------------

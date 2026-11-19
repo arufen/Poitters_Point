@@ -1,6 +1,12 @@
 ﻿#include "Game/Component/ComponentItemPickUp.h"
 #include "Game/Component/ComponentStateIdleWalk.h"
 #include "Game/MainStage.h"
+#include <cmath>
+
+namespace {
+//Own name, because DxLib already has a "PI" and the name clashes(DxLibにもう「PI」があって名前がぶつかるので、自分専用の名前にする)
+const float PICKUP_PI = 3.14159265f;
+}    // namespace
 
 void ComponentItemPickUp::Init()
 {
@@ -25,13 +31,30 @@ void ComponentItemPickUp::Update()
     if(isThrown_) {
         float delta = GetDeltaTime();
 
-        velocity_.y -= gravity_ * delta;    //Gravity pulls the item down(重力でアイテムを下に引っ張る)
-
         float3 pos = GetOwner()->GetTranslate();
 
         //Right after the throw, collision may push the item to the ground, so use our own position(投げた直後は当たり判定が地面に押し戻すことがあるので、自分の位置を使う)
         if(throwGraceTimer_ > 0.0f)
             pos = throwPos_;
+        //Falling, but something pushed us UP since last frame = we landed on top of something (another item, a head...)
+        //Only "Ground" calls OnLanded(), so without this an item on top of another item would stay "thrown" forever
+        //(落ちているのに前のフレームから上に押し戻された＝何かの上に乗った(別のアイテム・頭など)
+        // OnLanded()を呼ぶのは「Ground」だけなので、これがないとアイテムの上に乗ったアイテムがずっと「投げ中」になる)
+        else if((float)velocity_.y < 0.0f && (float)pos.y > (float)throwPos_.y + 0.01f)
+            isGround_ = true;
+
+        //Landed last frame: bounce or stop(前のフレームで着地した：バウンドするか止まる)
+        CheckGround();
+
+        //Safety timer(安全タイマー)
+        thrownTime_ += delta;
+        if(isThrown_ && thrownTime_ >= maxThrowTime_)
+            StopThrow();
+
+        if(!isThrown_)
+            return;
+
+        velocity_.y -= gravity_ * delta;    //Gravity pulls the item down(重力でアイテムを下に引っ張る)
 
         pos.x += velocity_.x * delta;
         pos.y += velocity_.y * delta;
@@ -41,7 +64,11 @@ void ComponentItemPickUp::Update()
         //Remember the position for the next frame(次のフレームのために位置を覚える)
         throwPos_ = pos;
 
-        CheckGround();
+        //Tumble(回転)
+        spinAngle_ += spinNow_ * delta;
+        if(spinAngle_ >= 360.0f)
+            spinAngle_ -= 360.0f;
+        ApplySpin();
     }
     else {
         velocity_ = {0.0f, 0.0f, 0.0f};
@@ -50,11 +77,116 @@ void ComponentItemPickUp::Update()
 
 void ComponentItemPickUp::CheckGround()
 {
-    //isGround_ is set by OnLanded(), which Item::OnHit() calls when touching the ground(isGround_はItem::OnHit()から呼ばれるOnLanded()で設定される)
-    if(isGround_) {
-        isThrown_ = false;
-        velocity_ = {0.0f, 0.0f, 0.0f};
+    //isGround_ is set by OnLanded() (Item::OnHit with "Ground") or by the landed-on-something check in Update()
+    //(isGround_はOnLanded()(Item::OnHitで「Ground」の時)か、Update()の「何かの上に乗った」チェックで設定される)
+    if(!isGround_)
+        return;
+    isGround_ = false;
+
+    //Already going up = we just bounced and are still touching the ground. Ignore(もう上に向かっている＝バウンドした直後でまだ地面に触れている。無視する)
+    if((float)velocity_.y > 0.0f)
+        return;
+
+    //Bounce: flip the up speed and lose some, and slow down forward + spin(バウンド：上向きの速さを反転して少し減らし、前向きの速さと回転も遅くする)
+    if(bouncesLeft_ > 0) {
+        float up = -(float)velocity_.y * bounceKeepUp_;
+        if(up >= bounceMinSpeed_) {
+            bouncesLeft_--;
+            velocity_.y  = up;
+            velocity_.x *= bounceKeepForward_;
+            velocity_.z *= bounceKeepForward_;
+            spinNow_    *= bounceKeepForward_;
+            return;
+        }
     }
+
+    //No bounces left, or too slow to bounce: stop here(バウンドが残っていない、または遅すぎる：ここで止まる)
+    StopThrow();
+}
+
+void ComponentItemPickUp::StopThrow()
+{
+    isThrown_ = false;
+    velocity_ = {0.0f, 0.0f, 0.0f};
+
+    //Stand the model up again so it rests normally on the ground(モデルをまっすぐに戻して、地面に普通に置かれるようにする)
+    ResetSpin();
+}
+
+ComponentItemPickUpPtr ComponentItemPickUp::SetBounce(int count, float keepUp, float keepForward, float minSpeed)
+{
+    bounceCount_       = count;
+    bounceKeepUp_      = keepUp;
+    bounceKeepForward_ = keepForward;
+    bounceMinSpeed_    = minSpeed;
+    return std::dynamic_pointer_cast<ComponentItemPickUp>(shared_from_this());
+}
+
+ComponentItemPickUpPtr ComponentItemPickUp::SetSpin(float degreesPerSecond)
+{
+    spinSpeed_ = degreesPerSecond;
+    return std::dynamic_pointer_cast<ComponentItemPickUp>(shared_from_this());
+}
+
+void ComponentItemPickUp::OnHitWall(const float3& normal, float keep)
+{
+    if(!isThrown_)
+        return;
+
+    //Speed going INTO the wall. Negative = moving out of the arena(壁に向かう速さ。マイナス＝アリーナの外へ動いている)
+    float into = (float)velocity_.x * (float)normal.x + (float)velocity_.z * (float)normal.z;
+    if(into < 0.0f) {
+        //Flip that part of the speed and keep only some of it, like a ball off a wall(その分の速さを反転して一部だけ残す。壁に当たったボールのように)
+        velocity_.x -= normal.x * into * (1.0f + keep);
+        velocity_.z -= normal.z * into * (1.0f + keep);
+
+        //Face the new direction so it keeps tumbling forward(新しい方向を向いて、前に転がり続けるように)
+        spinYaw_ = atan2f((float)velocity_.x, (float)velocity_.z) * (180.0f / PICKUP_PI);
+    }
+
+    //The wall moved us, so our own remembered position must follow(壁が位置を動かしたので、覚えている位置も合わせる)
+    throwPos_ = GetOwner()->GetTranslate();
+}
+
+ComponentItemPickUpPtr ComponentItemPickUp::SetModelTransform(float modelScale, const float3& rotationDegrees)
+{
+    const float toRad = PICKUP_PI / 180.0f;
+
+    //Matrices are applied LEFT to RIGHT in this engine (row vectors, like world = mul(model, owner)).
+    //Note: "*" between matrices multiplies each element, so a real matrix product must use mul()
+    //(このエンジンの行列は左から右の順にかかる(行ベクトル。world = mul(model, owner)と同じ)。
+    // 注意：行列どうしの「*」は要素ごとの掛け算なので、本当の行列の掛け算はmul()を使う)
+    matrix fix = mul(mul(matrix::rotateX((float)rotationDegrees.x * toRad),    //
+                         matrix::rotateY((float)rotationDegrees.y * toRad)),
+                     matrix::rotateZ((float)rotationDegrees.z * toRad));
+
+    modelBase_ = mul(matrix::scale(modelScale), fix);
+
+    ResetSpin();    //Show it right away(すぐに反映する)
+    return std::dynamic_pointer_cast<ComponentItemPickUp>(shared_from_this());
+}
+
+void ComponentItemPickUp::ApplySpin()
+{
+    const float toRad = PICKUP_PI / 180.0f;
+
+    //scale -> rotation fix -> forward tumble (X) -> turn to the throw direction (Y)
+    //The fix comes first, so whatever rotX/Y/Z a model needs, it still tumbles forward
+    //(スケール→回転の補正→前への回転(X)→投げた方向を向く(Y)
+    // 補正が最初なので、モデルにどんなrotX/Y/Zが必要でも、前に転がる)
+    if(auto model = GetOwner()->GetComponent<ComponentModel>()) {
+        matrix tumble   = matrix::rotateX(spinAngle_ * toRad);
+        matrix face     = matrix::rotateY(spinYaw_ * toRad);
+        model->Matrix() = mul(mul(modelBase_, tumble), face);
+    }
+}
+
+void ComponentItemPickUp::ResetSpin()
+{
+    //Back to the resting pose (scale + rotation fix), not to plain 0(ただの0ではなく、普段の姿(スケール＋回転の補正)に戻す)
+    spinAngle_ = 0.0f;
+    if(auto model = GetOwner()->GetComponent<ComponentModel>())
+        model->Matrix() = modelBase_;
 }
 
 void ComponentItemPickUp::OnLanded()
@@ -99,6 +231,9 @@ void ComponentItemPickUp::OnPickedUp(Object* holder)
 
     //Remember the holder to know the throw direction later(あとで投げる方向を知るため持ち主を覚える)
     holder_ = holder;
+
+    //Stand the model up in the hand, in case it was still tumbling(まだ回っていた場合に備えて、手の中ではモデルをまっすぐにする)
+    ResetSpin();
 
     throwGraceTimer_ = 0.2f;
 }
@@ -160,6 +295,13 @@ void ComponentItemPickUp::OnThrow()
     velocity_    = direction * throwSpeed_;
     velocity_.y += upBoost_;
     isThrown_    = true;
+
+    //Fresh bounces, safety timer and tumble for this throw(今回の投げのバウンド数・安全タイマー・回転をリセット)
+    bouncesLeft_ = bounceCount_;
+    thrownTime_  = 0.0f;
+    spinNow_     = spinSpeed_;
+    spinAngle_   = 0.0f;
+    spinYaw_     = atan2f((float)direction.x, (float)direction.z) * (180.0f / PICKUP_PI);
 
     //New throw: remember who threw it and allow one hit again(新しい投げ：誰が投げたかを覚えて、もう一度1回だけ当たれるようにする)
     thrower_ = holder_;
