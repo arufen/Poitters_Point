@@ -2,8 +2,11 @@
 #include "Game/Component/ComponentItemPickUp.h"
 #include "Game/Component/ComponentScatterFly.h"
 #include "Game/Component/ComponentExplosionFx.h"
+#include "Game/Component/ComponentCharacterStats.h"
 #include "Game/Item.h"
 #include "Game/ConsumableItem.h"
+#include "Game/Player.h"
+#include "Game/Npc.h"
 #include <cmath>
 
 namespace {
@@ -36,6 +39,31 @@ ComponentItemBoxPtr ComponentItemBox::SetConsumableChance(int percent)
 {
     consumableChance_ = percent;
     return std::dynamic_pointer_cast<ComponentItemBox>(shared_from_this());
+}
+
+ComponentItemBoxPtr ComponentItemBox::SetBlast(float radius, int damage)
+{
+    blastRadius_ = radius;
+    blastDamage_ = damage;
+    return std::dynamic_pointer_cast<ComponentItemBox>(shared_from_this());
+}
+
+void ComponentItemBox::ApplyBlastDamage(const float3& center)
+{
+    if(blastDamage_ <= 0 || blastRadius_ <= 0.0f)
+        return;
+
+    //Check one character: close enough and has HP -> take damage(キャラ1人を調べる：近くてHPがあればダメージ)
+    auto hurt = [&](::Object* obj) {
+        float dist = (float)length(obj->GetTranslate() - center);
+        if(dist > blastRadius_)
+            return;
+        if(auto stats = obj->GetComponent<ComponentCharacterStats>())
+            stats->TakeDamage(blastDamage_);    //Does nothing if already dead(すでに死んでいたら何もしない)
+    };
+
+    for(auto& player : Scene::GetObjectsPtr<PoittersPoint::Player>()) hurt(player.get());
+    for(auto& npc : Scene::GetObjectsPtr<PoittersPoint::Npc>()) hurt(npc.get());
 }
 
 void ComponentItemBox::Update()
@@ -91,6 +119,9 @@ void ComponentItemBox::Explode()
         float angle = (2.0f * ITEMBOX_PI) * ((float)i / (float)count) + RandRange(-0.3f, 0.3f);
         SpawnOneItem(center, angle);
     }
+
+    //TNT: hurt everyone close by. Chest has damage 0 so this does nothing(TNT：近くの全員にダメージ。チェストはダメージ0なので何もしない)
+    ApplyBlastDamage(center);
 
     //Blast effect as its own small object, so the box can be deleted right now(爆発エフェクトは別の小さいオブジェクト。だから箱はすぐに消せる)
     auto fx = Scene::Object::Create<::Object>("Explosion");
@@ -155,6 +186,8 @@ void ComponentItemBox::GUI()
             if(maxCount_ < minCount_)
                 maxCount_ = minCount_;
             ImGui::DragInt(u8"消費アイテム確率%", &consumableChance_, 1, 0, 100);
+            ImGui::DragFloat(u8"爆風の範囲", &blastRadius_, 0.5f, 0.0f, 300.0f);
+            ImGui::DragInt(u8"爆風のダメージ", &blastDamage_, 1, 0, 50);
             ImGui::DragFloat(u8"横の速さ 最小", &flySpeedMin_, 0.5f);
             ImGui::DragFloat(u8"横の速さ 最大", &flySpeedMax_, 0.5f);
             ImGui::DragFloat(u8"上の速さ 最小", &flyUpMin_, 0.5f);

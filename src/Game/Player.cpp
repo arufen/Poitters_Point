@@ -10,6 +10,7 @@
 #include "Component/ComponentCharacterStats.h"
 #include "Component/ComponentPlayerState.h"
 #include "Component/ComponentPlayerPickUpTrigger.h"
+#include "Component/ComponentArenaBounds.h"
 #include "Game/Component/ComponentStateIdleWalk.h"
 #include "Component/ComponentStateIdleWalk.h"
 #include <cstring>
@@ -122,6 +123,9 @@ bool Player::Init()
     col->SetCollisionGroup(ComponentCollision::CollisionGroup::PLAYER);
 
     AddComponent<ComponentPlayerPickUpTrigger>();
+
+    //Invisible wall, so the player can not fall off the stage(見えない壁。プレイヤーがステージから落ちないように)
+    AddComponent<ComponentArenaBounds>();
 
     //UI
     UI_key_e = LoadGraph("data/Game/UI/E_Key.png");

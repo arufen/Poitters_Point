@@ -8,6 +8,7 @@
 #include "MainStage.h"
 #include "Component/ComponentCharacterStats.h"
 #include "Component/ComponentPlayerPickUpTrigger.h"
+#include "Component/ComponentArenaBounds.h"
 #include <cmath>
 #include <string>
 
@@ -52,6 +53,9 @@ bool Npc::Init()
 
     //Same pickup component as the player, it works for any Object(プレイヤーと同じ拾うコンポーネント。どのObjectでも使える)
     AddComponent<ComponentPlayerPickUpTrigger>();
+
+    //Invisible wall, so the NPC can not fall off the stage(見えない壁。NPCがステージから落ちないように)
+    AddComponent<ComponentArenaBounds>();
 
     return true;
 }

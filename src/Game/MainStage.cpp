@@ -10,7 +10,6 @@
 #include "Ground.h"
 #include "Item.h"
 #include "ConsumableItem.h"
-#include "ItemBox.h"
 
 #include "MainCamera.h"
 //#include "TutorialX_Enemy.h"
@@ -39,15 +38,12 @@ bool PoittersPoint_MainStage::Init()
 
     Scene::Object::Create<Camera>();
 
-    // Spawn more items in random places on the ground / 地面上のランダムな場所にアイテムを複数配置
-    for(int i = 0; i < 8; ++i) {
-        auto item = Scene::Object::Create<Item>();
-        if(item) {
-            float rx = (GetRand(200) - 100);
-            float rz = (GetRand(200) - 100);
-            item->SetTranslate({rx, 60.0f, rz});
-        }
-    }
+    //Throwable items (rocks, chest, TNT...) all come from the spawner. Edit the pool in StageConfig.h
+    //Called after Player/Npc, so items do not spawn on top of them
+    //(投げるアイテム(石・チェスト・TNT...)はすべてスポナーから出る。プールはStageConfig.hで変える
+    // Player/Npcの後に呼ぶので、キャラの真上にはアイテムが出ない)
+    itemSpawner_.Init();
+
     // Spawn consumable items (apple, golden apple, speed potion) at random places in the arena
     // 消費アイテム(リンゴ・金のリンゴ・スピードポーション)をアリーナのランダムな場所に配置
     for(int i = 0; i < 6; ++i) {
@@ -59,21 +55,18 @@ bool PoittersPoint_MainStage::Init()
         }
     }
 
-    // Also spawn one more as before for compatibility / 互換性のため1つ追加
-
-    //Prototype: put 2 item boxes at random places. Move this to the object spawner later
-    //(仮：アイテムボックスを2個ランダムな場所に置く。あとでオブジェクトスポーンに移す)
-    for(int i = 0; i < 2; ++i) {
-        float rx = (GetRand(200) - 100);
-        float rz = (GetRand(200) - 100);
-        SpawnItemBox({rx, 60.0f, rz});
-    }
-
     return true;
 }
 
 void PoittersPoint_MainStage::Update()
 {
+    itemSpawner_.Update(GetDeltaTime());
+}
+
+void PoittersPoint_MainStage::GUI()
+{
+    Super::GUI();
+    itemSpawner_.GUI();
 }
 
 }    // namespace PoittersPoint

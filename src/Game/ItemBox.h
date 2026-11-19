@@ -1,16 +1,19 @@
 ﻿//---------------------------------------------------------------------------
 //!	@file	ItemBox.h
-//! @brief	ItemBox (a throwable chest that explodes on landing and scatters items)
+//! @brief	Make any throwable item: cobblestone, ice, obsidian, wood plank, chest, TNT
+//!         (投げられるアイテムを作る：丸石・氷・黒曜石・木材の板・チェスト・TNT)
 //---------------------------------------------------------------------------
 #pragma once
 #include "Item.h"
+#include "StageConfig.h"
 
 namespace PoittersPoint {
 
-//Spawn an item box at the position. The box IS an Item with a chest model and ComponentItemBox,
-//so pickup, lifting, throwing, damage and NPC AI all work with no changes to other files.
-//(指定位置にアイテムボックスを出す。ボックスの正体は「宝箱モデル＋ComponentItemBox」をつけたItemなので、
-// 拾う・持ち上げ・投げる・ダメージ・NPCのAIが、他のファイルを変えずにそのまま動く)
-ItemPtr SpawnItemBox(const float3& pos);
+//Spawn a throwable item of that type at the position. Every type IS an Item, so pickup, lifting, throwing,
+//damage and NPC AI all work with no changes to other files.
+//Chest and TNT also get ComponentItemBox, so they explode after landing from a throw.
+//(その種類の投げるアイテムを指定位置に出す。どの種類もItemなので、拾う・持ち上げ・投げる・ダメージ・NPCのAIが
+// 他のファイルを変えずにそのまま動く。チェストとTNTはComponentItemBoxもつくので、投げて着地すると爆発する)
+ItemPtr SpawnThrowable(StageConfig::ItemType type, const float3& pos);
 
 }    // namespace PoittersPoint

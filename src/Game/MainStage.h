@@ -2,7 +2,9 @@
 //!	@file	MainStage.h
 //! @brief	MainStage
 //---------------------------------------------------------------------------
+#pragma once
 #include <System/Scene.h>
+#include "ItemSpawner.h"
 
 namespace PoittersPoint {
 
@@ -19,7 +21,11 @@ public:
 
     void Update() override;
 
+    void GUI() override;
+
 private:
+    //Keeps the throwable item pool full (StageConfig.h)(投げるアイテムのプールを満タンに保つ(StageConfig.h))
+    ItemSpawner itemSpawner_;
 };
 
 }    // namespace PoittersPoint
