@@ -71,6 +71,18 @@ ItemPtr Item::SetItemType(StageConfig::ItemType type)
     float3 size = {def.objectScale, def.objectScale, def.objectScale};
     SetScaleAxisXYZ(size);
 
+    //Bounce and tumble after a throw, by weight. Chest and TNT get 0 bounces so they explode on the first landing
+    //(投げた後のバウンドと回転。重さで決まる。チェストとTNTはバウンド0なので最初の着地で爆発する)
+    if(auto pickup = GetComponent<ComponentItemPickUp>()) {
+        const auto& bounce = StageConfig::GetBounceDef(def.weightType);
+        int         count  = StageConfig::CanBounce(type) ? bounce.count : 0;
+        pickup->SetBounce(count, bounce.keepUp, bounce.keepForward, StageConfig::BOUNCE_MIN_SPEED)->SetSpin(bounce.spinSpeed);
+
+        //Model scale + facing fix from StageConfig. Set here (after the new model was added) so it applies to the new model
+        //(StageConfigのモデルのスケールと向きの補正。新しいモデルを追加した後にここで設定するので、新しいモデルにかかる)
+        pickup->SetModelTransform(ms, float3(def.rotX, def.rotY, def.rotZ));
+    }
+
     //Collision size for this model(このモデルに合った当たり判定の大きさ)
     if(auto col = GetComponent<ComponentCollisionCapsule>()) {
         col->SetRadius(def.colRadius);

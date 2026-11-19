@@ -110,8 +110,8 @@ void Npc::UpdateSearchItem()
 
     for(auto& item : Scene::GetObjectsPtr<PoittersPoint::Item>()) {
         auto pickup = item->GetComponent<ComponentItemPickUp>();
-        if(!pickup || pickup->IsHeld())
-            continue;    //No pickup component, or someone is holding it(拾うコンポーネントがない、または誰かが持っている)
+        if(!pickup || pickup->IsHeld() || pickup->IsThrown())
+            continue;    //No pickup component, someone is holding it, or it is still flying/bouncing(拾うコンポーネントがない、誰かが持っている、または飛んでいる・バウンド中)
 
         float3 toItem = FlatVector(myPos, item->GetTranslate());
         float  dist   = (float)length(toItem);

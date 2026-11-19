@@ -37,22 +37,28 @@ void ComponentArenaBounds::PostUpdate()
     float minZ = SC::ARENA_MIN_Z + margin_;
     float maxZ = SC::ARENA_MAX_Z - margin_;
 
-    bool changed = false;
+    //normal = direction back into the arena from the wall we hit(normal＝当たった壁からアリーナの内側への向き)
+    bool   changed = false;
+    float3 normal  = {0.0f, 0.0f, 0.0f};
     if(x < minX) {
-        x       = minX;
-        changed = true;
+        x        = minX;
+        changed  = true;
+        normal.x = 1.0f;
     }
     if(x > maxX) {
-        x       = maxX;
-        changed = true;
+        x        = maxX;
+        changed  = true;
+        normal.x = -1.0f;
     }
     if(z < minZ) {
-        z       = minZ;
-        changed = true;
+        z        = minZ;
+        changed  = true;
+        normal.z = 1.0f;
     }
     if(z > maxZ) {
-        z       = maxZ;
-        changed = true;
+        z        = maxZ;
+        changed  = true;
+        normal.z = -1.0f;
     }
 
     //Only write when outside, so we never touch y for objects that are inside(外に出た時だけ書く。中にいる物のyは絶対に触らない)
@@ -60,6 +66,12 @@ void ComponentArenaBounds::PostUpdate()
         pos.x = x;
         pos.z = z;
         owner->SetTranslate(pos);
+
+        //A thrown item bounces back off the wall instead of sliding down it(投げたアイテムは壁を滑り落ちずに跳ね返る)
+        if(auto pickup = owner->GetComponent<ComponentItemPickUp>()) {
+            if(pickup->IsThrown())
+                pickup->OnHitWall(normalize(normal), SC::WALL_BOUNCE_KEEP);
+        }
     }
 }
 
