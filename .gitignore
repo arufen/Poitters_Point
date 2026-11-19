@@ -20,3 +20,8 @@ data/_save
 imgui.ini
 src/.clang-format
 tools/Setting.ini
+
+# editor settings (personal, everyone has their own) #
+######################################################
+.vscode/
+*.code-workspace
