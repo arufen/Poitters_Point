@@ -95,6 +95,17 @@ void ComponentPlayerPickUpTrigger::ThrowItem()
     heldItem_.reset();
 }
 
+void ComponentPlayerPickUpTrigger::DropItem()
+{
+    if(auto item = heldItem_.lock()) {
+        if(auto pickup = item->GetComponent<ComponentItemPickUp>())
+            pickup->OnDropped();
+    }
+
+    heldItem_.reset();
+    liftTimer_ = 0.0f;
+}
+
 void ComponentPlayerPickUpTrigger::PickUpItem()
 {
     //Already holding something(もう持っている)

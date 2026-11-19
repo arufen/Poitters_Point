@@ -36,6 +36,10 @@ public:
     //アイテムを持ち上げる
     void PickUpItem();
 
+    //Let go of the held item without throwing it (e.g. on K.O.). Also cancels lifting
+    //(持っているアイテムを投げずに離す(K.O.の時など)。持ち上げ中もキャンセルする)
+    void DropItem();
+
     // returns the nearby pickup-able item, or nullptr if none in range
     PoittersPoint::ItemPtr GetNearbyItem();
 

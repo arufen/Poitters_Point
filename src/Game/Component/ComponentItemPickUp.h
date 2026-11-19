@@ -38,6 +38,10 @@ public:
     //Item calls this after it hurt a character. Only one hit per throw, and it loses most sideways speed(キャラに当たってダメージを与えた後にアイテムが呼ぶ。1回の投げで1回だけ当たり、横の速度はほぼなくなる)
     void OnHitCharacter();
 
+    //The holder let go without throwing (e.g. K.O.). The item falls straight down near the holder and can be picked up again
+    //(持ち主が投げずに手を離した(K.O.など)。アイテムは持ち主の近くにそのまま落ちて、また拾える)
+    void OnDropped();
+
     //How it bounces after a throw. count 0 = stops on the first landing (chest, TNT). Chainable
     //(投げた後のバウンドの仕方。countが0なら最初の着地で止まる(チェスト・TNT)。つなげて呼べる)
     ComponentItemPickUpPtr SetBounce(int count, float keepUp, float keepForward, float minSpeed);

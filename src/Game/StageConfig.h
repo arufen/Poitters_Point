@@ -231,6 +231,18 @@ inline constexpr float NPC_SHADOW_RADIUS        = 6.0f;
 //@}
 
 //--------------------------------------------------------------------
+//! @name Match flow: countdown, timer, end(試合の流れ：カウントダウン、タイマー、終わり)
+//--------------------------------------------------------------------
+//@{
+inline constexpr int   COUNTDOWN_FROM     = 3;         //3, 2, 1, GO!(3、2、1、GO!)
+inline constexpr float GO_SHOW_TIME       = 0.8f;      //Seconds "GO!" stays on screen (players can already move)(「GO!」が画面に残る秒数(もう動ける))
+inline constexpr float MATCH_TIME         = 120.0f;    //Match length in seconds. 120 = 2:00(試合の長さ(秒)。120＝2:00)
+inline constexpr float TIMER_WARNING_TIME = 10.0f;     //Timer turns red in the last seconds(残りこの秒数でタイマーが赤くなる)
+inline constexpr float FINISH_BANNER_TIME = 2.0f;      //Seconds FINISH! / TIME UP! is shown before the fade(フェードの前にFINISH!/TIME UP!を出す秒数)
+inline constexpr float SCENE_FADE_TIME    = 0.8f;      //Fade to/from black between scenes(シーンの間の暗転・明転の秒数)
+//@}
+
+//--------------------------------------------------------------------
 //! @name TNT
 //--------------------------------------------------------------------
 //@{
