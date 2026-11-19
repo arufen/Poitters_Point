@@ -9,6 +9,7 @@
 #include "Component/ComponentItemPickUp.h"
 #include "Component/ComponentCharacterStats.h"
 #include "Component/ComponentArenaBounds.h"
+#include "Component/ComponentKnockdown.h"
 #include <System/Component/ComponentModel.h>
 #include <System/Component/ComponentCollisionCapsule.h>
 #include <string>
@@ -121,8 +122,23 @@ void Item::OnHit(const ComponentCollision::HitInfo& hit_info)
             //(ComponentCharacterStatsを持っていれば誰でもダメージを受ける。名前は見ないので、Player・Npc0・Npc1...全部OK)
             if(auto stats = other->GetComponent<ComponentCharacterStats>()) {
                 //TakeDamage returns false if the target is already dead, so the item passes through(すでに死んでいたらfalseなので、アイテムはそのまま通り抜ける)
-                if(stats->TakeDamage(GetDamage()))
+                if(stats->TakeDamage(GetDamage())) {
+                    //Knockback in the direction the item was flying (hit from the left = pushed right). Read it BEFORE
+                    //OnHitCharacter(), which slows the item down. No sideways speed (dropped from above) = push away from the item
+                    //(アイテムが飛んでいた方向にふっとぶ(左から当たる＝右へ飛ぶ)。アイテムを遅くするOnHitCharacter()の「前」に読む。
+                    // 横の速さがない(上から落ちた)ならアイテムから離れる方向へ)
+                    if(auto knock = other->GetComponent<ComponentKnockdown>()) {
+                        float3 dir = pickup->GetVelocity();
+                        dir.y      = 0.0f;
+                        if((float)length(dir) < 1.0f) {
+                            dir   = other->GetTranslate() - GetTranslate();
+                            dir.y = 0.0f;
+                        }
+                        knock->Knock(dir, weight_ * StageConfig::KNOCKBACK_DISTANCE_PER_WEIGHT);
+                    }
+
                     pickup->OnHitCharacter();
+                }
             }
         }
     }

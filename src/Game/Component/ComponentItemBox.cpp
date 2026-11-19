@@ -3,6 +3,8 @@
 #include "Game/Component/ComponentScatterFly.h"
 #include "Game/Component/ComponentExplosionFx.h"
 #include "Game/Component/ComponentCharacterStats.h"
+#include "Game/Component/ComponentKnockdown.h"
+#include "Game/StageConfig.h"
 #include "Game/Item.h"
 #include "Game/ConsumableItem.h"
 #include "Game/Player.h"
@@ -58,8 +60,13 @@ void ComponentItemBox::ApplyBlastDamage(const float3& center)
         float dist = (float)length(obj->GetTranslate() - center);
         if(dist > blastRadius_)
             return;
-        if(auto stats = obj->GetComponent<ComponentCharacterStats>())
-            stats->TakeDamage(blastDamage_);    //Does nothing if already dead(すでに死んでいたら何もしない)
+        auto stats = obj->GetComponent<ComponentCharacterStats>();
+        if(!stats || !stats->TakeDamage(blastDamage_))
+            return;    //No HP, or already dead(HPがない、またはすでに死んでいる)
+
+        //Knocked away from the blast center: the closer side of the blast pushes you(爆発の中心から外へふっとぶ：爆発に近い側から押される)
+        if(auto knock = obj->GetComponent<ComponentKnockdown>())
+            knock->Knock(obj->GetTranslate() - center, PoittersPoint::StageConfig::TNT_KNOCKBACK_DISTANCE);
     };
 
     for(auto& player : Scene::GetObjectsPtr<PoittersPoint::Player>()) hurt(player.get());
