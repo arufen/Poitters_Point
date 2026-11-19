@@ -243,6 +243,20 @@ inline constexpr float SCENE_FADE_TIME    = 0.8f;      //Fade to/from black betw
 //@}
 
 //--------------------------------------------------------------------
+//! @name Knockdown (getting hit)(ダウン(当たった時))
+//--------------------------------------------------------------------
+//@{
+inline constexpr float KNOCKDOWN_TIME =
+    1.0f;    //Seconds a hit character can not act (the red bar). Same for every hit(当たったキャラが動けない秒数(赤いバー)。どの攻撃でも同じ)
+
+//Push back: slides away from the hit and slows down. Distance = weight x this, so heavier items push further
+//(ふっとび：当たった方向から離れるように滑って、だんだん止まる。距離＝重さ×これ。重い物ほど遠くまで飛ばす)
+inline constexpr float KNOCKBACK_DISTANCE_PER_WEIGHT = 12.0f;    //Medium (1.3) ~16, Obsidian (2.5) ~30(普通(1.3)で約16、黒曜石(2.5)で約30)
+inline constexpr float KNOCKBACK_FRICTION            = 8.0f;     //How fast the slide stops. Bigger = stops quicker(滑りが止まる速さ。大きいほど早く止まる)
+inline constexpr float TNT_KNOCKBACK_DISTANCE        = 35.0f;    //TNT pushes everyone away from the blast this far(TNTは爆発の中心からこれだけ押し飛ばす)
+//@}
+
+//--------------------------------------------------------------------
 //! @name TNT
 //--------------------------------------------------------------------
 //@{

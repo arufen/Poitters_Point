@@ -11,6 +11,7 @@
 #include "Component/ComponentArenaBounds.h"
 #include "Component/ComponentGroundShadow.h"
 #include "Component/ComponentMatch.h"
+#include "Component/ComponentKnockdown.h"
 #include "StageConfig.h"
 #include <cmath>
 #include <string>
@@ -62,6 +63,9 @@ bool Npc::Init()
 
     //Round shadow under the feet, cast onto the floor(床に落とす足元の丸い影)
     AddComponent<ComponentGroundShadow>()->SetRadius(StageConfig::NPC_SHADOW_RADIUS);
+
+    //Getting hit: slide back, drop the item, red bar until getting up(当たった時：後ろに滑って、物を落とし、起き上がるまで赤いバー)
+    AddComponent<ComponentKnockdown>();
 
     return true;
 }

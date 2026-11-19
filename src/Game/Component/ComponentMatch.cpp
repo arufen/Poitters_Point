@@ -1,6 +1,7 @@
 ﻿#include "Game/Component/ComponentMatch.h"
 #include "Game/Component/ComponentCharacterStats.h"
 #include "Game/Component/ComponentPlayerPickUpTrigger.h"
+#include "Game/Component/ComponentKnockdown.h"
 #include "Game/StageConfig.h"
 #include "Game/MatchResult.h"
 #include "Game/Player.h"
@@ -64,6 +65,12 @@ void ComponentMatch::Exit()
 
 bool ComponentMatch::CanAct(::Object* character)
 {
+    //Knocked down: can not act, in any scene(ダウン中：どのシーンでも動けない)
+    if(auto knock = character->GetComponent<ComponentKnockdown>()) {
+        if(knock->IsDown())
+            return false;
+    }
+
     auto match = s_current.lock();
     if(!match)
         return true;    //No match in this scene(このシーンに試合はない)

@@ -13,6 +13,7 @@
 #include "Component/ComponentArenaBounds.h"
 #include "Component/ComponentGroundShadow.h"
 #include "Component/ComponentMatch.h"
+#include "Component/ComponentKnockdown.h"
 #include "StageConfig.h"
 #include "Game/Component/ComponentStateIdleWalk.h"
 #include "Component/ComponentStateIdleWalk.h"
@@ -132,6 +133,9 @@ bool Player::Init()
 
     //Round shadow under the feet(足元の丸い影)
     AddComponent<ComponentGroundShadow>()->SetRadius(StageConfig::PLAYER_SHADOW_RADIUS);
+
+    //Getting hit: slide back, drop the item, red bar until getting up(当たった時：後ろに滑って、物を落とし、起き上がるまで赤いバー)
+    AddComponent<ComponentKnockdown>();
 
     //UI
     UI_key_e = LoadGraph("data/Game/UI/E_Key.png");

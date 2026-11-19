@@ -29,6 +29,10 @@ public:
     bool IsHeld() const { return isHeld_; }
     bool IsThrown() const { return isThrown_; }
 
+    //Flying speed and direction while thrown (zero when not thrown). Used for the knockback direction
+    //(投げられている間の速さと方向(投げていない時は0)。ふっとぶ方向に使う)
+    const float3& GetVelocity() const { return velocity_; }
+
     //True only while flying and before it hit anyone(飛んでいる間で、まだ誰にも当たっていない時だけtrue)
     bool CanDealDamage() const { return isThrown_ && !hasHit_; }
 
