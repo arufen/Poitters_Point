@@ -12,10 +12,11 @@ void ComponentSpawnPop::Init()
     Super::Init();
 }
 
-ComponentSpawnPopPtr ComponentSpawnPop::Start(float targetScale, float duration)
+ComponentSpawnPopPtr ComponentSpawnPop::Start(float targetScale, float duration, EaseType ease)
 {
     targetScale_ = targetScale;
     duration_    = (duration > 0.01f) ? duration : 0.01f;
+    ease_        = ease;
     timer_       = 0.0f;
     finished_    = false;
 
@@ -37,12 +38,9 @@ void ComponentSpawnPop::Update()
     if(t > 1.0f)
         t = 1.0f;
 
-    //Ease-out-back: goes a little bigger than 1, then settles. Looks like a "pop"
-    //(イーズアウトバック：1より少し大きくなってから戻る。「ポン」と出る感じ)
-    const float c1 = 1.70158f;
-    const float c3 = c1 + 1.0f;
-    float       u  = t - 1.0f;
-    float       k  = 1.0f + c3 * u * u * u + c1 * u * u;
+    //Engine ease curve: 0 at the start, 1 at the end. OutBack goes a little over 1 then settles, which looks like a "pop"
+    //(エンジンのイージングカーブ：最初は0、最後は1。OutBackは1を少し超えてから戻るので「ポン」と出る感じになる)
+    float k = GetEaseFunction(ease_)(t);
 
     float s = targetScale_ * k;
     if(s < MIN_SCALE)

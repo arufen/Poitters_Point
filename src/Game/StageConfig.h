@@ -5,6 +5,7 @@
 //---------------------------------------------------------------------------
 #pragma once
 #include "Item.h"
+#include <System/EaseCurve.h>
 #include <iterator>
 
 namespace PoittersPoint::StageConfig {
@@ -145,7 +146,10 @@ inline constexpr float       CARRIER_LEAVE_TIME = 1.0f;      //Seconds to fly aw
 inline constexpr float       CARRIER_SPIN_SPEED = 720.0f;    //Spin speed in degrees per second during the animation(アニメ中の回転速度(度/秒))
 inline constexpr float       CARRIER_DROP_BELOW = 15.0f;     //The item appears this far under the carrier(アイテムは運び役のこれだけ下に出る)
 inline constexpr float       SPAWN_POP_TIME     = 0.25f;     //Seconds for the item to grow from 0 to full size(アイテムが0から本来の大きさになる秒数)
-inline constexpr float       MARKER_RADIUS      = 14.0f;     //Ground marker size(地面のマーカーの大きさ)
+//Shape of the pop. Any EaseType from System/EaseCurve.h. Try OutElastic (wobble) or OutBounce (bounce). Elastic looks better with ~0.6s
+//(ポンと出るカーブ。System/EaseCurve.hのEaseTypeならなんでもOK。OutElastic(ぷるぷる)やOutBounce(バウンド)も試せる。Elasticは0.6秒くらいが合う)
+inline constexpr EaseType SPAWN_POP_EASE = EaseType::OutBack;
+inline constexpr float    MARKER_RADIUS  = 14.0f;    //Ground marker size(地面のマーカーの大きさ)
 //@}
 
 //--------------------------------------------------------------------

@@ -141,7 +141,7 @@ void ComponentSpawnCarrier::DropItem()
         return;
 
     //Pop in from tiny to full size(とても小さい所から本来の大きさへポンと出る)
-    item->AddComponent<ComponentSpawnPop>()->Start(item->GetSize(), SC::SPAWN_POP_TIME);
+    item->AddComponent<ComponentSpawnPop>()->Start(item->GetSize(), SC::SPAWN_POP_TIME, SC::SPAWN_POP_EASE);
 
     spawnedItem_ = item;
 }
