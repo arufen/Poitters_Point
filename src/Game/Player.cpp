@@ -112,7 +112,11 @@ bool Player::Init()
             {"carryStart", "data/Game/Models/Player/OR_Anims/Carry_start.mv1", 0, 1.0f}, // 物を持ち上げ始める(OR_Anims)
             { "carryWalk",  "data/Game/Models/Player/OR_Anims/Carry_walk.mv1", 3, 1.5f}, // 物を持ちながら歩く(OR_Anims)
             {     "throw",       "data/Game/Models/Player/OR_Anims/Throw.mv1", 0, 1.0f}, // 物を投げる
-            { "carryHold", "data/Game/Models/Player/OR_Anims/Carry_start.mv1", 0, 1.0f}  // 持ち位置のポーズ(Carry_startの終点フレーム)
+            { "carryHold", "data/Game/Models/Player/OR_Anims/Carry_start.mv1", 0, 1.0f}, // 持ち位置のポーズ(Carry_startの終点フレーム)
+            //[ADD] Knockdown animations made with tools/AnimMaker. ComponentKnockdown plays them when hit
+            //([追加] tools/AnimMakerで作ったダウンのアニメ。当たった時にComponentKnockdownが再生する)
+            {      "down",        "data/Game/Models/Player/OR_Anims/Down.mv1", 0, 1.0f}, // 当たって後ろに飛び、仰向けに倒れる / hit, fly back, land on the back
+            {     "getup",       "data/Game/Models/Player/OR_Anims/GetUp.mv1", 0, 1.0f}  // 座って→しゃがんで→立つ / sit up, crouch, stand
     });
     SetTranslate({0, 5, 0});
 
@@ -155,8 +159,18 @@ void Player::Update()
     if(!ComponentMatch::CanAct(this)) {
         if(auto walk = GetComponent<ComponentStateIdleWalk>())
             walk->SetStatus(Component::StatusBit::Enable, false);
-        if(auto mdl = GetComponent<ComponentModel>())
+
+        //[CHANGE] While the down/getup animation is playing (or lying after K.O.), do NOT play "idle" over it
+        //([変更] down/getupのアニメ中(K.O.で倒れたままの時も)は、上から「idle」を再生しない)
+        auto knock     = GetComponent<ComponentKnockdown>();
+        bool knockAnim = knock && knock->IsPlayingKnockAnimation();
+        if(auto mdl = GetComponent<ComponentModel>(); mdl && !knockAnim)
             mdl->PlayAnimationNoSame("idle", true);
+
+        //[ADD] Getting hit cancels a throw that was in progress (the item was already dropped)
+        //([追加] 当たったら途中の投げを取り消す(物はもう落としている))
+        throwTimer_    = 0.0f;
+        throwReleased_ = false;
         return;
     }
 

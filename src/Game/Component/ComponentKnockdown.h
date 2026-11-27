@@ -6,11 +6,15 @@ USING_PTR(ComponentKnockdown);
 
 //Getting hit: the character slides back, drops what it carries, and can not act for a moment.
 //A red bar above the head shows how long until they get up.
-//[ADD] The character now also FALLS DOWN and GETS UP again (made in code by tilting the model, so no animation file is needed).
-//After a K.O. the character stays lying on the ground.
+//[ADD] The character now also FALLS DOWN and GETS UP again. After a K.O. the character stays lying on the ground.
+//  - Model with "down" and "getup" animations (the Player: OR_Anims/Down.mv1, GetUp.mv1)
+//      -> it turns to face the hit, then plays those animations (real bone animation)
+//  - Model without them (NPCs for now) -> the whole model is tilted in code, as a fallback
 //(当たった時：キャラは後ろに滑って、持っている物を落とし、少しの間動けない。頭の上の赤いバーで起き上がるまでの時間を見せる。
-// [追加] キャラが「倒れて」、また「起き上がる」ようになった(モデルを傾けてコードで作っているので、アニメのファイルはいらない)。
-// K.O.された後は倒れたままになる)
+// [追加] キャラが「倒れて」、また「起き上がる」ようになった。K.O.された後は倒れたままになる。
+//  - 「down」と「getup」のアニメがあるモデル(プレイヤー：OR_Anims/Down.mv1, GetUp.mv1)
+//      → 当たった方を向いてから、そのアニメを再生する(ボーンが動く本物のアニメ)
+//  - アニメがないモデル(今はNPC) → 予備として、モデル全体をコードで傾ける)
 class ComponentKnockdown : public Component
 {
 public:
@@ -32,13 +36,42 @@ public:
     //True while knocked down (can not move, pick up or throw)(ダウン中ならtrue(動けない・拾えない・投げられない))
     bool IsDown() const { return timer_ > 0.0f; }
 
+    //[ADD] True while the down/getup ANIMATION owns the model (also while lying after a K.O.).
+    //The owner must not play "idle" over it during this time (see Player::Update)
+    //([追加] down/getupの「アニメ」がモデルを動かしている間true(K.O.で倒れたままの間も)。
+    // この間、持ち主は上から「idle」を再生してはいけない(Player::Updateを参照))
+    bool IsPlayingKnockAnimation() const { return animActive_; }
+
+    //[ADD] Animation names the model must register to use the animation files([追加]アニメのファイルを使うためにモデルが登録する名前)
+    static constexpr const char* ANIM_DOWN  = "down";
+    static constexpr const char* ANIM_GETUP = "getup";
+
 private:
     float  timer_    = 0.0f;                  //Time left until they get up(起き上がるまでの残り時間)
     float  duration_ = 1.0f;                  //Full knockdown time, for the bar(ダウンの全体の時間。バー用)
     float3 slideVel_ = {0.0f, 0.0f, 0.0f};    //Slide speed, slows down every frame(滑る速さ。毎フレーム遅くなる)
 
     //--------------------------------------------------------------------
-    //[ADD] Fall-down / get-up animation(倒れる・起き上がるアニメ)
+    //[ADD] Animation-file mode (Player)(アニメファイルのモード(プレイヤー))
+    //Timeline of one knockdown (KNOCKDOWN_TIME = 1.0 s):
+    //  0.00 - 0.40 s : "down"  hit, fly back, land on the back, small bounce   (downAnimTime_)
+    //  0.40 - 0.60 s : lie on the back (the last frame of "down" is held)
+    //  0.60 - 1.00 s : "getup" sit up, crouch, stand                          (getUpAnimTime_)
+    //(1回のダウンの流れ(KNOCKDOWN_TIME＝1.0秒)：
+    //  0.00〜0.40秒：「down」当たる→後ろに飛ぶ→背中から落ちる→小さくバウンド(downAnimTime_)
+    //  0.40〜0.60秒：仰向けに倒れている(「down」の最後のフレームのまま)
+    //  0.60〜1.00秒：「getup」起き上がる→しゃがむ→立つ(getUpAnimTime_))
+    //--------------------------------------------------------------------
+    bool  animActive_    = false;    //The animations own the model now(今アニメがモデルを動かしている)
+    bool  getUpStarted_  = false;    //"getup" was started for this knockdown(このダウンで「getup」を始めた)
+    float downAnimTime_  = 0.40f;    //Seconds to play the whole "down" animation(「down」アニメ全体を再生する秒数)
+    float getUpAnimTime_ = 0.40f;    //Seconds to play the whole "getup" animation(「getup」アニメ全体を再生する秒数)
+
+    //The model has both animations registered(モデルに両方のアニメが登録されているか)
+    bool HasKnockAnimations() const;
+
+    //--------------------------------------------------------------------
+    //[ADD] Fallback: tilt the whole model (models without the animations)(予備：モデル全体を傾ける(アニメがないモデル))
     //Timeline of one knockdown (KNOCKDOWN_TIME = 1.0 s):
     //  0.00 - 0.20 s : fall backward with a small hop   (fallTime_)
     //  0.20 - 0.65 s : lie on the ground

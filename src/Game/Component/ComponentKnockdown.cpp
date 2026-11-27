@@ -55,9 +55,46 @@ void ComponentKnockdown::Knock(const float3& awayDir, float distance)
 
     //[ADD] Fall-down animation setup([追加]倒れるアニメの準備)
     auto mdl = GetOwner()->GetComponent<ComponentModel>();
-    if(!mdl)
+    if(!mdl || !fallEnabled_)
         return;
 
+    //[ADD] Animation-file mode: the model has "down" and "getup" (the Player)
+    //([追加] アニメファイルのモード：モデルに「down」と「getup」がある(プレイヤー))
+    if(HasKnockAnimations()) {
+        getUpStarted_ = false;
+
+        if(wasDown || animActive_) {
+            //Hit again while down: stay lying (last frame of "down"), and the wait starts again
+            //(ダウン中にまた当たった：倒れたまま(「down」の最後のフレーム)で、待ち時間が最初から)
+            timer_ = duration_ - downAnimTime_;
+            mdl->PlayAnimation(ANIM_DOWN, false, 0.1f, mdl->GetAnimationTotalTime(ANIM_DOWN));
+            animActive_ = true;
+            return;
+        }
+
+        //Turn to face the hit, so "down" (which always falls BACKWARD) falls the way we are pushed.
+        //SetRotationToVector(v) makes the model look toward v, the same as walking does
+        //(当たった方を向く。「down」はいつも「後ろ」に倒れるので、これで押された方向へ倒れる。
+        // SetRotationToVector(v)はモデルをvの方へ向ける。歩く時と同じ)
+        if((float)length(dir) > 0.001f)
+            mdl->SetRotationToVector(-dir);
+
+        //Speed so the whole animation takes downAnimTime_ / getUpAnimTime_ seconds. Animation time runs at 30 per second
+        //(アニメ全体がdownAnimTime_/getUpAnimTime_秒になる速さ。アニメの時間は1秒に30進む)
+        float downTotal  = mdl->GetAnimationTotalTime(ANIM_DOWN);
+        float getUpTotal = mdl->GetAnimationTotalTime(ANIM_GETUP);
+        if(downAnimTime_ > 0.01f)
+            mdl->SetAnimationSpeed(ANIM_DOWN, downTotal / (30.0f * downAnimTime_));
+        if(getUpAnimTime_ > 0.01f)
+            mdl->SetAnimationSpeed(ANIM_GETUP, getUpTotal / (30.0f * getUpAnimTime_));
+
+        //Short blend: being hit is sudden(短いブレンド：当たるのは一瞬なので)
+        mdl->PlayAnimation(ANIM_DOWN, false, 0.05f, 0.0f);
+        animActive_ = true;
+        return;
+    }
+
+    //Fallback below: no animation files, tilt the whole model(以下は予備：アニメのファイルがないので、モデル全体を傾ける)
     if(wasDown || poseSaved_) {
         //Already lying: skip the fall part, so the body does not jump up and fall again(もう倒れている：倒れる部分を飛ばす。体が起きてまた倒れないように)
         timer_ = duration_ - fallTime_;
@@ -107,7 +144,30 @@ void ComponentKnockdown::Update()
         }
     }
 
-    //[ADD] Fall-down / get-up animation([追加]倒れる・起き上がるアニメ)
+    //K.O. = stay on the ground(K.O.なら地面に倒れたまま)
+    bool dead = false;
+    if(auto stats = GetOwner()->GetComponent<ComponentCharacterStats>())
+        dead = stats->IsDead();
+
+    //[ADD] Animation-file mode: start "getup" near the end, then give the model back to walking/idle
+    //([追加] アニメファイルのモード：最後のほうで「getup」を始め、そのあとモデルを歩き/アイドルに返す)
+    if(animActive_) {
+        auto mdl = GetOwner()->GetComponent<ComponentModel>();
+
+        if(!dead && !getUpStarted_ && timer_ <= getUpAnimTime_) {
+            getUpStarted_ = true;
+            if(mdl)
+                mdl->PlayAnimation(ANIM_GETUP, false, 0.08f, 0.0f);
+        }
+
+        //Done: standing again. A K.O. keeps animActive_ so nobody plays "idle" over the lying pose
+        //(終わり：また立った。K.O.ならanimActive_のままにして、倒れた姿勢の上に誰も「idle」を再生しないようにする)
+        if(!IsDown() && !dead)
+            animActive_ = false;
+        return;
+    }
+
+    //[ADD] Fallback tilt([追加]予備の傾け)
     if(!poseSaved_)
         return;    //Standing normally, nothing to do(普通に立っている。何もしない)
 
@@ -116,15 +176,18 @@ void ComponentKnockdown::Update()
         return;
     }
 
-    //K.O. = stay on the ground(K.O.なら地面に倒れたまま)
-    bool dead = false;
-    if(auto stats = GetOwner()->GetComponent<ComponentCharacterStats>())
-        dead = stats->IsDead();
-
     if(IsDown() || dead)
         ApplyFallPose(GetFallDegrees(dead), GetHopHeight());
     else
         RestorePose();    //Knockdown is over: stand up straight again(ダウン終わり：またまっすぐ立つ)
+}
+
+//[ADD] Both animations are registered on the model (GetAnimationTotalTime returns 0 when the name is unknown)
+//([追加] モデルに両方のアニメが登録されているか(名前がなければGetAnimationTotalTimeは0を返す))
+bool ComponentKnockdown::HasKnockAnimations() const
+{
+    auto mdl = GetOwner()->GetComponent<ComponentModel>();
+    return mdl && mdl->GetAnimationTotalTime(ANIM_DOWN) > 0.0f && mdl->GetAnimationTotalTime(ANIM_GETUP) > 0.0f;
 }
 
 //[ADD] Tilt for the current moment. See the timeline in the header([追加]今の傾き。流れはヘッダーを参照)
@@ -241,6 +304,13 @@ void ComponentKnockdown::GUI()
             //[ADD] Fall-down animation tuning([追加]倒れるアニメの調整)
             ImGui::Separator();
             ImGui::Checkbox(u8"倒れるアニメ / Fall animation", &fallEnabled_);
+
+            //[ADD] Which mode this character uses([追加] このキャラがどちらのモードを使っているか)
+            ImGui::Text(HasKnockAnimations() ? u8"モード: アニメファイル(down/getup)" : u8"モード: コードで傾ける(アニメなし)");
+            ImGui::DragFloat(u8"downの秒数(Down sec)", &downAnimTime_, 0.01f, 0.05f, 1.0f);
+            ImGui::DragFloat(u8"getupの秒数(GetUp sec)", &getUpAnimTime_, 0.01f, 0.05f, 1.0f);
+
+            ImGui::Text(u8"--- 予備(傾け) / Fallback tilt ---");
             ImGui::Text("Tilt now: %.1f deg", fallDegNow_);
             ImGui::DragFloat(u8"倒れる角度(Max deg)", &fallMaxDeg_, 1.0f, 0.0f, 90.0f);
             ImGui::DragFloat(u8"倒れる秒数(Fall sec)", &fallTime_, 0.01f, 0.0f, 1.0f);
