@@ -84,9 +84,11 @@ def v3_mul(v, m):
 
 
 def rotation_from(spec):
-    """spec = {'x': deg, 'y': deg, 'z': deg}, applied X then Y then Z(X→Y→Zの順にかける)"""
+    """spec = {'x': deg, 'y': deg, 'z': deg}, applied X then Y then Z(X→Y→Zの順にかける)
+    [ADD] spec['order'] = "zyx" etc. changes the order. Needed when an arm is first lowered (Z) and then swung (X)
+    ([追加] spec['order'] = "zyx" などで順番を変えられる。腕を下ろして(Z)から振る(X)時に必要)"""
     m = m3_identity()
-    for axis in ("x", "y", "z"):
+    for axis in spec.get("order", "xyz"):
         if spec.get(axis, 0.0) != 0.0:
             m = m3_mul(m, rot3(axis, spec[axis]))
     return m
@@ -355,6 +357,10 @@ def lerp_pose(a, b, t):
     for name in set(a["bones"]) | set(b["bones"]):
         sa, sb = a["bones"].get(name, {}), b["bones"].get(name, {})
         out["bones"][name] = {ax: sa.get(ax, 0.0) * (1 - t) + sb.get(ax, 0.0) * t for ax in ("x", "y", "z")}
+        # [ADD] Keep the rotation order of the bone (see rotation_from)([追加] ボーンの回転の順番を引きつぐ(rotation_fromを参照))
+        order = sb.get("order") or sa.get("order")
+        if order:
+            out["bones"][name]["order"] = order
     return out
 
 

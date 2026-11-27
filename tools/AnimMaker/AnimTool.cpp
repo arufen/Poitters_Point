@@ -14,6 +14,9 @@
 //!   AnimTool.exe verify  <model.mv1> <anim.mv1> <out.txt>
 //!       Play the animation on the model and write the Chest/Head height over time, to check it
 //!       (モデルにアニメを再生させて、Chest/Headの高さを時間ごとに書き出す。確認用)
+//!   AnimTool.exe info    <file.mv1> [more files...]
+//!       Print how many animations each file has, with their names and lengths
+//!       (各ファイルにアニメがいくつあるか、名前と長さを表示する)
 //!   AnimTool.exe render  <model.mv1> <animA.mv1> <animB.mv1> side|quarter <out.png>
 //!       Draw 8 moments of each animation into one PNG, to look at the motion
 //!       (各アニメの8つの瞬間を1枚のPNGに描く。動きを目で確認するため)
@@ -212,6 +215,15 @@ int main(int argc, char** argv)
         ret = Convert(argv[2], argv[3]);
     else if(strcmp(argv[1], "verify") == 0 && argc >= 5)
         ret = Verify(argv[2], argv[3], argv[4]);
+    else if(strcmp(argv[1], "info") == 0) {
+        //List the animations inside each file(各ファイルの中のアニメを一覧にする)
+        for(int i = 2; i < argc; ++i) {
+            int h = MV1LoadModel(argv[i]);
+            printf("%s : handle=%d anims=%d frames=%d\n", argv[i], h, h >= 0 ? MV1GetAnimNum(h) : -1, h >= 0 ? MV1GetFrameNum(h) : -1);
+            for(int a = 0; h >= 0 && a < MV1GetAnimNum(h); ++a) printf("   [%d] %s total=%.1f\n", a, MV1GetAnimName(h, a), MV1GetAnimTotalTime(h, a));
+        }
+        ret = 0;
+    }
     else if(strcmp(argv[1], "render") == 0 && argc >= 7)
         ret = Render(argv[2], argv[3], argv[4], argv[5], argv[6]);
 

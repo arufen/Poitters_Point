@@ -12,6 +12,7 @@
 #include "Component/ComponentGroundShadow.h"
 #include "Component/ComponentMatch.h"
 #include "Component/ComponentKnockdown.h"
+#include "Component/ComponentNpcAction.h"
 #include "StageConfig.h"
 #include <cmath>
 #include <string>
@@ -31,20 +32,15 @@ bool Npc::Init()
 {
     Super::Init();
 
-    //Every NPC needs a different name, because the item attaches to the hand by object name(アイテムは名前で手にくっつくので、NPCごとに別の名前が必要)
+    //Every NPC gets its own name (Npc0, Npc1...), easy to find in the ImGui windows(NPCごとに別の名前(Npc0, Npc1…)。ImGuiのウィンドウで見分けやすい)
     static int npcCount = 0;
     SetName("Npc" + std::to_string(npcCount++));
 
-    //NPC uses the police model and its own animations(NPCは警察のモデルとそのアニメを使う)
-    AddComponent<ComponentModel>("data/Game/Models/Enemy/POLICE/Police.mv1")
-        ->SetAnimation({
-            { "idle",    "data/Game/Models/Enemy/POLICE/Anims/Idle.mv1", 0, 1.0f},
-            { "walk", "data/Game/Models/Enemy/POLICE/Anims/Walking.mv1", 0, 3.3f},
-            {"throw",  "data/Game/Models/Enemy/POLICE/Anims/Snatch.mv1", 0, 1.0f}
-    });
-
-    // Randomize NPC stats: HP 8-19, strength 0.7-1.2, speed 0.6-0.9 / NPCのステータスをランダム化
-    AddComponent<ComponentCharacterStats>()->SetMaxHP(8 + GetRand(12))->SetStrength(0.7f + (GetRand(6) * 0.1f))->SetSpeed(0.6f + (GetRand(4) * 0.1f));
+    //[CHANGE] Model, animations and stats come from NpcCharacterDef.h. Default = cha0002 バイト(CVS)
+    //(Before: the police model with only idle/walk/throw, and the throw animation was never played)
+    //([変更] モデル・アニメ・ステータスはNpcCharacterDef.hから。最初はcha0002 バイト(CVS)
+    // (前：警察のモデルでidle/walk/throwだけ。投げアニメは一度も再生されていなかった))
+    ApplyCharacter(NpcCharacterId::CVS);
 
     SetTranslate({40 + (GetRand(60) - 30), 5, 40 + (GetRand(60) - 30)});
 
@@ -64,19 +60,56 @@ bool Npc::Init()
     //Round shadow under the feet, cast onto the floor(床に落とす足元の丸い影)
     AddComponent<ComponentGroundShadow>()->SetRadius(StageConfig::NPC_SHADOW_RADIUS);
 
-    //Getting hit: slide back, drop the item, red bar until getting up(当たった時：後ろに滑って、物を落とし、起き上がるまで赤いバー)
-    AddComponent<ComponentKnockdown>();
+    //(ComponentKnockdown and ComponentNpcAction were added by ApplyCharacter() above)
+    //(ComponentKnockdownとComponentNpcActionは上のApplyCharacter()で追加済み)
 
     return true;
+}
+
+//[ADD] Become a character from NpcCharacterDef.h([追加] NpcCharacterDef.hのキャラになる)
+void Npc::ApplyCharacter(NpcCharacterId id)
+{
+    characterId_    = id;
+    const auto& def = GetNpcCharacterDef(id);
+
+    //Model + animations. Remove the old model first, so this can also switch characters later
+    //(モデル＋アニメ。先に古いモデルを外すので、あとからキャラを変えることもできる)
+    RemoveComponent<ComponentModel>();
+    AddComponent<ComponentModel>(def.modelPath)->SetAnimation(def.animations);
+
+    //Stats with a small random spread(少しランダムに散らしたステータス)
+    auto stats = GetComponent<ComponentCharacterStats>();
+    if(!stats)
+        stats = AddComponent<ComponentCharacterStats>();
+    stats->SetMaxHP(def.hpMin + GetRand(def.hpRandom))
+        ->SetStrength(def.strengthMin + GetRand(def.strengthSteps) * 0.1f)
+        ->SetSpeed(def.speedMin + GetRand(def.speedSteps) * 0.05f);
+
+    //Getting hit: slide back, drop the item, play down/getup. Light characters are blown further
+    //(当たった時：後ろに滑って、物を落とし、down/getupを再生。軽いキャラは遠くへ飛ぶ)
+    auto knock = GetComponent<ComponentKnockdown>();
+    if(!knock)
+        knock = AddComponent<ComponentKnockdown>();
+    knock->SetKnockbackScale(def.knockbackScale);
+
+    //The "body": Player-like animations for run / lift / carry / throw(「体」：走る・持ち上げ・運ぶ・投げるのプレイヤーと同じアニメ)
+    auto action = GetComponent<ComponentNpcAction>();
+    if(!action)
+        action = AddComponent<ComponentNpcAction>();
+    action->SetThrowTiming(def.throwAnimSpeed, def.throwReleaseRatio);
 }
 
 void Npc::Update()
 {
     Super::Update();
 
-    //Frozen during the countdown, after K.O. and after the match ended(カウントダウン中・K.O.後・試合終了後は動かない)
+    //Frozen during the countdown, when knocked down, after K.O. and after the match ended
+    //[CHANGE] Freeze() also leaves the down/getup animation alone (StopMove() used to play idle over it)
+    //(カウントダウン中・ダウン中・K.O.後・試合終了後は動かない。
+    // [変更] Freeze()はdown/getupのアニメにも手を出さない(前のStopMove()は上からidleを再生していた))
     if(!ComponentMatch::CanAct(this)) {
-        StopMove();
+        if(auto action = GetComponent<ComponentNpcAction>())
+            action->Freeze();
         return;
     }
 
@@ -87,6 +120,10 @@ void Npc::Update()
 
     case State::AimThrow:
         UpdateAimThrow();
+        break;
+
+    case State::Throwing:
+        UpdateThrowing();
         break;
 
     case State::Cooldown:
@@ -238,12 +275,27 @@ void Npc::UpdateAimThrow()
     aimTimer_++;
 
     //Throw when we face the target, or when we waited too long(ターゲットを向いたら投げる。待ちすぎても投げる)
+    //[CHANGE] Start the throw ANIMATION. The item leaves the hand at the arm-swing moment (ComponentNpcAction)
+    //Before: the item flew away at once with no animation
+    //([変更] 投げ「アニメ」を始める。物は腕を振った瞬間に手から離れる(ComponentNpcAction)。前：アニメなしですぐ飛んでいた)
     if(IsFacing(aimDir) || aimTimer_ >= aimTimeoutFrames_) {
-        trigger->ThrowItem();
-
-        cooldownTimer_ = cooldownFrames_;
-        state_         = State::Cooldown;
+        auto action = GetComponent<ComponentNpcAction>();
+        if(action && action->StartThrow())
+            state_ = State::Throwing;
     }
+}
+
+//[ADD] Wait until the throw animation is over, then cool down([追加] 投げアニメが終わるまで待ち、それから休む)
+void Npc::UpdateThrowing()
+{
+    auto action = GetComponent<ComponentNpcAction>();
+    if(action && action->IsThrowing()) {
+        StopMove();    //Stand still. The throw animation keeps playing(立ち止まる。投げアニメはそのまま流れる)
+        return;
+    }
+
+    cooldownTimer_ = cooldownFrames_;
+    state_         = State::Cooldown;
 }
 
 void Npc::UpdateCooldown()
@@ -255,41 +307,32 @@ void Npc::UpdateCooldown()
         state_ = State::SearchItem;
 }
 
+//[CHANGE] The 4 functions below now only pass the order to ComponentNpcAction (the "body"),
+//which moves and picks the Player-like animation
+//([変更] 下の4つの関数は、命令をComponentNpcAction(「体」)に渡すだけになった。
+// 動かすのと、プレイヤーと同じアニメを選ぶのは「体」がやる)
 void Npc::MoveTowards(const float3& dir)
 {
-    //Move in the world direction, same call as ComponentStateIdleWalk(ワールド方向に移動。ComponentStateIdleWalkと同じ呼び方)
-    auto  stats = GetComponent<ComponentCharacterStats>();
-    float speed = stats ? stats->GetSpeed() : 0.8f;    //0.8 = fallback without stats(ステータスがない時の予備の速度)
-    AddTranslate(dir * speed, true);
-
-    FaceTowards(dir);
-
-    if(auto mdl = GetComponent<ComponentModel>())
-        mdl->PlayAnimationNoSame("walk", true);
+    if(auto action = GetComponent<ComponentNpcAction>())
+        action->Move(dir);
 }
 
 void Npc::StopMove()
 {
-    if(auto mdl = GetComponent<ComponentModel>())
-        mdl->PlayAnimationNoSame("idle", true);
+    if(auto action = GetComponent<ComponentNpcAction>())
+        action->Stop();
 }
 
 void Npc::FaceTowards(const float3& dir)
 {
-    if(auto mdl = GetComponent<ComponentModel>())
-        mdl->SetRotationToVectorWithLimit(dir, rotateSpeed_);
+    if(auto action = GetComponent<ComponentNpcAction>())
+        action->Face(dir);
 }
 
 bool Npc::IsFacing(const float3& dir)
 {
-    auto mdl = GetComponent<ComponentModel>();
-    if(!mdl)
-        return true;
-
-    //Same way ComponentItemPickUp::OnThrow gets the throw direction(ComponentItemPickUp::OnThrowが投げる方向を取るのと同じ方法)
-    float3 facing = normalize(-mdl->GetWorldVectorAxisZ());
-
-    return (float)dot(facing, dir) > 0.98f;
+    auto action = GetComponent<ComponentNpcAction>();
+    return action ? action->IsFacing(dir) : true;
 }
 
 void Npc::TakeDamage(int dmg)

@@ -323,12 +323,11 @@ void Player::DrawHpHud()
     if(auto myStats = GetComponent<ComponentCharacterStats>())
         entries.push_back({"PLAYER", myStats, true});
 
-    int npcNumber = 1;    //Shown as NPC 1, NPC 2... (NPCの名前は増え続けるので、表示は1から数え直す)
+    //[CHANGE] Show the character name (CVS / POLICE / JGSDF) instead of "NPC 1, NPC 2...", so you can tell who is who
+    //([変更] 「NPC 1, NPC 2…」ではなくキャラ名(CVS/POLICE/JGSDF)を出す。誰が誰か分かるように)
     for(auto& npc : Scene::GetObjectsPtr<PoittersPoint::Npc>()) {
         if(auto npcStats = npc->GetComponent<ComponentCharacterStats>())
-            entries.push_back({"NPC " + std::to_string(npcNumber), npcStats, false});
-
-        npcNumber++;
+            entries.push_back({npc->GetCharacterDef().name, npcStats, false});
     }
 
     if(entries.empty())

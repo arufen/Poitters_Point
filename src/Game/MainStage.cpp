@@ -29,12 +29,21 @@ bool PoittersPoint_MainStage::Init()
     // Spawn player (already requested) / プレイヤーを1体生成（既に存在として扱う）
     Scene::Object::Create<Player>();
     // Spawn 3 NPCs and make them able to throw objects at NPC or player / NPCを3体生成し、NPC同士・プレイヤーに投げられるようにする
-    for(int i = 0; i < 3; ++i) {
+    //[CHANGE] One NPC per character: cha0002 CVS, cha0003 POLICE, cha0004 JGSDF. Each is set up from NpcCharacterDef.h,
+    //so a character can be changed alone later. To change the line-up, edit this list
+    //([変更] キャラごとにNPCを1体ずつ：cha0002 CVS、cha0003 POLICE、cha0004 JGSDF。それぞれNpcCharacterDef.hから作るので、
+    // あとから1キャラずつ変えられる。顔ぶれを変える時はこのリストを変える)
+    const NpcCharacterId npcLineUp[] = {NpcCharacterId::CVS, NpcCharacterId::POLICE, NpcCharacterId::JGSDF};
+    for(NpcCharacterId id : npcLineUp) {
         auto npc = Scene::Object::Create<Npc>();
+        if(!npc)
+            continue;
+
+        npc->ApplyCharacter(id);    //[ADD] Model, animations and stats of this character([追加] このキャラのモデル・アニメ・ステータス)
+
         // Give some randomness / ランダム性を追加
         float3 pos = {20.0f + (GetRand(80) - 40), 5.0f, 20.0f + (GetRand(80) - 40)};
-        if(npc)
-            npc->SetTranslate(pos);
+        npc->SetTranslate(pos);
     }
 
     Scene::Object::Create<Camera>();

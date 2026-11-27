@@ -42,14 +42,23 @@ public:
     // この間、持ち主は上から「idle」を再生してはいけない(Player::Updateを参照))
     bool IsPlayingKnockAnimation() const { return animActive_; }
 
+    //[ADD] Knockback distance x scale. 1.0 = normal, bigger = blown further (cha0002 CVS = 1.6). Chainable
+    //([追加] ふっとぶ距離×scale。1.0＝普通、大きいほど遠くへ飛ぶ(cha0002 CVS＝1.6)。つなげて呼べる)
+    ComponentKnockdownPtr SetKnockbackScale(float scale)
+    {
+        knockbackScale_ = scale;
+        return std::dynamic_pointer_cast<ComponentKnockdown>(shared_from_this());
+    }
+
     //[ADD] Animation names the model must register to use the animation files([追加]アニメのファイルを使うためにモデルが登録する名前)
     static constexpr const char* ANIM_DOWN  = "down";
     static constexpr const char* ANIM_GETUP = "getup";
 
 private:
-    float  timer_    = 0.0f;                  //Time left until they get up(起き上がるまでの残り時間)
-    float  duration_ = 1.0f;                  //Full knockdown time, for the bar(ダウンの全体の時間。バー用)
-    float3 slideVel_ = {0.0f, 0.0f, 0.0f};    //Slide speed, slows down every frame(滑る速さ。毎フレーム遅くなる)
+    float  timer_          = 0.0f;                  //Time left until they get up(起き上がるまでの残り時間)
+    float  duration_       = 1.0f;                  //Full knockdown time, for the bar(ダウンの全体の時間。バー用)
+    float3 slideVel_       = {0.0f, 0.0f, 0.0f};    //Slide speed, slows down every frame(滑る速さ。毎フレーム遅くなる)
+    float  knockbackScale_ = 1.0f;                  //[ADD] Knockback distance x this([追加] ふっとぶ距離×これ)
 
     //--------------------------------------------------------------------
     //[ADD] Animation-file mode (Player)(アニメファイルのモード(プレイヤー))

@@ -42,7 +42,8 @@ void ComponentKnockdown::Knock(const float3& awayDir, float distance)
     dir        = (len > 0.001f) ? dir / len : float3(0.0f, 0.0f, 0.0f);
 
     //With speed v and friction f, the slide covers v / f, so v = distance x f(速さv・摩擦fだと滑る距離はv/f。だからv＝距離×f)
-    slideVel_ = dir * (distance * SC::KNOCKBACK_FRICTION);
+    //[CHANGE] x knockbackScale_: light characters (cha0002 CVS) are blown further([変更] ×knockbackScale_：軽いキャラ(cha0002 CVS)は遠くへ飛ぶ)
+    slideVel_ = dir * (distance * knockbackScale_ * SC::KNOCKBACK_FRICTION);
 
     bool wasDown = IsDown();
 
