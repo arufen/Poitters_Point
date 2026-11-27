@@ -101,7 +101,10 @@ bool Player::Init()
 
     SetName("Player");
 
-    auto player = Scene::Object::Create<Object>("Player");
+    //[DELETE] "auto player = Scene::Object::Create<Object>("Player");" was here. It made a SECOND, empty object also named "Player"
+    //that was never used, and anything that searched for "Player" by name could find that empty one instead of us
+    //([削除] ここに「auto player = Scene::Object::Create<Object>("Player");」があった。使われない空のオブジェクトを
+    // もう1つ「Player」という名前で作っていたので、名前で「Player」を探す処理が、自分ではなくその空のほうを見つけることがあった)
     AddComponent<ComponentModel>("data/Game/Models/Player/Salaryman.mv1")
         ->SetAnimation({
             {      "idle",           "data/Game/Models/Player/Anims/Idle.mv1", 0, 1.0f}, // Idle
