@@ -13,6 +13,10 @@ public:
 
     void Update() override;
 
+    //[ADD] While held, put the item between the holder's two hands. Runs after the holder's animation pose is done
+    //([追加] 持たれている間、アイテムを持ち主の両手の間に置く。持ち主のアニメの姿勢が決まった後に実行する)
+    void PostUpdate() override;
+
     void GUI() override;
 
     //Player calls this when it touches the item(プレイヤーがアイテムに触れた時に呼ぶ)
@@ -113,6 +117,38 @@ private:
 
     //A landing happened (isGround_): bounce if bounces are left, otherwise stop(着地した(isGround_)：バウンドが残っていれば跳ねて、なければ止まる)
     void CheckGround();
+
+    //--------------------------------------------------------------------
+    //[ADD] Holding in both hands(両手で持つ)
+    //Before: the item was stuck to ONE bone of the right forearm (ComponentAttachModel), and it also copied that bone's
+    //rotation, so in a two-handed carry pose it sat off-center and tilted.
+    //Now: the item goes to the MIDDLE of the left and right hand bones, and only turns with the direction the holder faces.
+    //(前：アイテムは右の前腕のボーン1本にくっついていて(ComponentAttachModel)、そのボーンの回転もコピーしていたので、
+    // 両手で持つポーズだと真ん中からずれて、傾いていた。
+    // 今：アイテムは左右の手のボーンの「真ん中」に置き、持ち主が向いている方向にだけ回る)
+    //--------------------------------------------------------------------
+    int    handRight_  = -1;    //Right hand bone index of the holder's model. -1 = not found(持ち主のモデルの右手のボーン番号。-1は見つからない)
+    int    handLeft_   = -1;    //Left hand bone index. -1 = not found(左手のボーン番号。-1は見つからない)
+    float3 holdScale_  = {1.0f, 1.0f, 1.0f};    //Item size when picked up, kept while held(拾った時のアイテムの大きさ。持っている間はこれを保つ)
+    float3 pickupPos_  = {0.0f, 0.0f, 0.0f};    //Where the item was when picked up, for the blend(拾った時のアイテムの位置。なめらかに動かすために使う)
+    float  holdBlend_  = 0.0f;                  //0 = still at pickupPos_, 1 = fully in the hands(0＝まだ拾った位置、1＝完全に手の中)
+    bool   holdWarped_ = false;                 //Already told the transform "this was a warp, not a move"(「移動ではなくワープ」とトランスフォームに伝えたか)
+
+    //Tuning values. Can be changed live in the ImGui window "PickupAbleItem"(調整用の値。ImGuiの「PickupAbleItem」で実行中に変えられる)
+    float holdUp_        = 0.0f;     //Move the item up from the hands' middle(手の真ん中から上へずらす量)
+    float holdForward_   = 0.0f;     //Move the item forward (the way the holder faces)(前(持ち主が向いている方)へずらす量)
+    float holdBlendTime_ = 0.15f;    //Seconds to move from the ground into the hands(地面から手の中へ移るまでの秒数)
+
+    //Used only when the holder's model has no hand bones we can find(持ち主のモデルに手のボーンが見つからない時だけ使う)
+    float holdFallbackHeight_ = 18.0f;    //Height above the holder's feet(持ち主の足元からの高さ)
+    float holdFallbackFront_  = 6.0f;     //Distance in front of the holder(持ち主の前方への距離)
+
+    //Find the holder's hand bones and remember their indices(持ち主の手のボーンを探して番号を覚える)
+    void FindHandBones();
+
+    //Where the item should be now, and which way it should face (flat X and Z axes)
+    //(今アイテムを置くべき位置と、向くべき方向(水平なX軸とZ軸))
+    void GetHoldPose(float3& outPos, float3& outAxisX, float3& outAxisZ) const;
 
     //End the throw: not flying anymore, can be picked up again(投げを終わる：もう飛んでいない。また拾える)
     void StopThrow();

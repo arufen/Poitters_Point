@@ -2,15 +2,59 @@
 #include "Game/Component/ComponentStateIdleWalk.h"
 #include "Game/MainStage.h"
 #include <cmath>
+#include <cctype>
+#include <string>
 
 namespace {
 //Own name, because DxLib already has a "PI" and the name clashes(DxLibにもう「PI」があって名前がぶつかるので、自分専用の名前にする)
 const float PICKUP_PI = 3.14159265f;
+
+//[ADD] Lower-case copy, so "RightHand" and "righthand" are treated the same([追加]小文字にしたコピー。「RightHand」と「righthand」を同じとみなすため)
+std::string ToLowerText(std::string_view text)
+{
+    std::string out(text);
+    for(char& c : out) c = (char)std::tolower((unsigned char)c);
+    return out;
+}
+
+//[ADD] Find one hand bone of a character model. Returns the bone index, or -1 if there is none
+//([追加]キャラモデルの片手のボーンを探す。ボーン番号を返す。なければ-1)
+int FindHandBone(ComponentModel& model, bool right)
+{
+    //1. Exact names. This project's Salaryman model first, then common Mixamo names (for other characters)
+    //(1. 名前がぴったり一致するもの。まずこのプロジェクトのサラリーマンモデル、次にMixamoでよくある名前(ほかのキャラ用))
+    static const char* RIGHT_NAMES[] = {"Arm:Right:Lower_end_end", "Arm:Right:Lower_end", "mixamorig:RightHand", "RightHand"};
+    static const char* LEFT_NAMES[]  = {"Arm:Left:Lower_end_end", "Arm:Left:Lower_end", "mixamorig:LeftHand", "LeftHand"};
+
+    for(const char* name : (right ? RIGHT_NAMES : LEFT_NAMES)) {
+        int no = model.GetNodeIndex(name);
+        if(no >= 0)
+            return no;
+    }
+
+    //2. Fuzzy: the first bone whose name has "right"/"left" AND "hand" (parents come before fingers, so this is the hand)
+    //(2. あいまい検索：名前に「right/left」と「hand」の両方が入っている最初のボーン(親が指より先に来るので、これが手になる))
+    const char* side  = right ? "right" : "left";
+    auto        names = model.GetNodesName();
+    for(int i = 0; i < (int)names.size(); ++i) {
+        std::string lower = ToLowerText(names[i]);
+        if(lower.find(side) != std::string::npos && lower.find("hand") != std::string::npos)
+            return i;
+    }
+
+    return -1;    //No hand bone. GetHoldPose() then uses a fixed spot in front of the chest(手のボーンなし。GetHoldPose()は胸の前の決まった位置を使う)
+}
 }    // namespace
 
 void ComponentItemPickUp::Init()
 {
     Super::Init();
+
+    //[ADD] Run PostUpdate() LAST, after every character has finished its animation pose this frame.
+    //Otherwise the hand bones would still be in last frame's position and the item would lag behind the hands
+    //([追加]PostUpdate()を「最後」に実行する。このフレームで全キャラのアニメの姿勢が決まった後。
+    // そうしないと手のボーンが前のフレームの位置のままで、アイテムが手から遅れてついてくる)
+    SetPriority(ProcTiming::PostUpdate, ProcPriority::LOWEST);
     isHeld_   = false;
     isThrown_ = false;    //Item must not start in flight(アイテムは最初から飛んでいてはいけない)
     isGround_ = false;
@@ -73,6 +117,105 @@ void ComponentItemPickUp::Update()
     else {
         velocity_ = {0.0f, 0.0f, 0.0f};
     }
+}
+
+//[ADD] Put the held item between the holder's hands. Called every frame AFTER all animations (see SetPriority in Init)
+//([追加] 持っているアイテムを持ち主の両手の間に置く。全部のアニメの後に毎フレーム呼ばれる(InitのSetPriorityを参照))
+void ComponentItemPickUp::PostUpdate()
+{
+    Super::PostUpdate();
+
+    if(!isHeld_ || !holder_)
+        return;
+
+    float3 target, axisX, axisZ;
+    GetHoldPose(target, axisX, axisZ);
+
+    //Move from the ground into the hands over holdBlendTime_ seconds, so the item does not pop into the hands
+    //(holdBlendTime_秒かけて地面から手の中へ動かす。アイテムが急に手の中へ飛ばないように)
+    if(holdBlendTime_ > 0.0f) {
+        holdBlend_ += GetDeltaTime() / holdBlendTime_;
+        if(holdBlend_ > 1.0f)
+            holdBlend_ = 1.0f;
+    }
+    else {
+        holdBlend_ = 1.0f;
+    }
+
+    //Smoothstep: starts slow, ends slow(スムーズステップ：ゆっくり始まって、ゆっくり終わる)
+    float  t   = holdBlend_ * holdBlend_ * (3.0f - 2.0f * holdBlend_);
+    float3 pos = pickupPos_ + (target - pickupPos_) * t;
+
+    //Build the item's matrix: face the same way as the holder, always upright, keep its own size
+    //(アイテムの行列を作る：持ち主と同じ方向を向き、いつもまっすぐ立てて、自分の大きさを保つ)
+    auto owner = GetOwner();
+    owner->SetVectorAxisX(axisX * (float)holdScale_.x);
+    owner->SetVectorAxisY(float3(0.0f, 1.0f, 0.0f) * (float)holdScale_.y);
+    owner->SetVectorAxisZ(axisZ * (float)holdScale_.z);
+    owner->SetTranslate(pos);
+
+    //The first frame is a jump from the ground, not a move. Tell the transform, same as ComponentAttachModel did
+    //(最初のフレームは地面からのジャンプで、移動ではない。ComponentAttachModelと同じようにトランスフォームに伝える)
+    if(!holdWarped_) {
+        holdWarped_ = true;
+        owner->UseWarp();
+    }
+}
+
+//[ADD] Look up the holder's hand bones once, when the item is picked up([追加]拾った時に一度だけ、持ち主の手のボーンを探す)
+void ComponentItemPickUp::FindHandBones()
+{
+    handRight_ = -1;
+    handLeft_  = -1;
+
+    if(!holder_)
+        return;
+
+    if(auto model = holder_->GetComponent<ComponentModel>()) {
+        handRight_ = FindHandBone(*model, true);
+        handLeft_  = FindHandBone(*model, false);
+    }
+}
+
+//[ADD] Where the held item should be, and which way it faces([追加]持っているアイテムを置く位置と、向く方向)
+void ComponentItemPickUp::GetHoldPose(float3& outPos, float3& outAxisX, float3& outAxisZ) const
+{
+    const float3 up = {0.0f, 1.0f, 0.0f};
+
+    //Facing: the holder MODEL's X and Z axes, made flat (no tilt) and length 1
+    //(向き：持ち主の「モデル」のX軸とZ軸を、水平(傾きなし)で長さ1にしたもの)
+    outAxisX = {1.0f, 0.0f, 0.0f};
+    outAxisZ = {0.0f, 0.0f, 1.0f};
+
+    auto model = holder_->GetComponent<ComponentModel>();
+    if(model) {
+        matrix world = model->GetWorldMatrix();
+        float3 ax    = world.axisX();
+        float3 az    = world.axisZ();
+        ax.y         = 0.0f;
+        az.y         = 0.0f;
+        if((float)length(ax) > 0.0001f)
+            outAxisX = normalize(ax);
+        if((float)length(az) > 0.0001f)
+            outAxisZ = normalize(az);
+    }
+
+    //The models look toward -Z, same as OnThrow() uses(モデルは-Z方向を向いている。OnThrow()と同じ)
+    float3 front = -outAxisZ;
+
+    //Middle of both hands. If only one hand was found, use that one. If none, a fixed spot in front of the chest
+    //(両手の真ん中。片手しか見つからなければその手。どちらもなければ胸の前の決まった位置)
+    float3 center;
+    if(model && handRight_ >= 0 && handLeft_ >= 0)
+        center = (model->GetNodePosition(handRight_) + model->GetNodePosition(handLeft_)) * 0.5f;
+    else if(model && handRight_ >= 0)
+        center = model->GetNodePosition(handRight_);
+    else if(model && handLeft_ >= 0)
+        center = model->GetNodePosition(handLeft_);
+    else
+        center = holder_->GetTranslate() + up * holdFallbackHeight_ + front * holdFallbackFront_;
+
+    outPos = center + up * holdUp_ + front * holdForward_;
 }
 
 void ComponentItemPickUp::CheckGround()
@@ -219,18 +362,18 @@ void ComponentItemPickUp::OnPickedUp(Object* holder)
     if(auto col = GetOwner()->GetComponent<ComponentCollision>())
         col->SetStatus(Component::StatusBit::Enable, false);
 
-    //Reset size(サイズをリセット)
-    float3 defaultSize = GetOwner()->GetScaleAxisXYZ();
-
-    //Attach the item to the holder's hand(アイテムを持ち主の手にくっつける)
-    auto attach = GetOwner()->AddComponent<ComponentAttachModel>();
-    attach->SetAttachObject(holder->GetName(), "Arm:Right:Lower_end_end");
-    //attach->SetAttachOffset({12, 17, 0});
-
-    GetOwner()->SetScaleAxisXYZ(defaultSize);
-
     //Remember the holder to know the throw direction later(あとで投げる方向を知るため持ち主を覚える)
     holder_ = holder;
+
+    //[CHANGE] No ComponentAttachModel any more. It found the holder by NAME (and there could be 2 objects called "Player"),
+    //and it followed only the right forearm. Now PostUpdate() puts the item between BOTH hands every frame
+    //([変更]ComponentAttachModelはもう使わない。持ち主を「名前」で探していて(「Player」という名前のオブジェクトが2つあることもあった)、
+    // 右の前腕しか追わなかった。今はPostUpdate()が毎フレーム「両手」の間にアイテムを置く)
+    holdScale_  = GetOwner()->GetScaleAxisXYZ();    //Keep the item's own size(アイテム自身の大きさを保つ)
+    pickupPos_  = GetOwner()->GetTranslate();       //Start the blend from where it lies(置いてある位置からなめらかに動かし始める)
+    holdBlend_  = 0.0f;
+    holdWarped_ = false;
+    FindHandBones();
 
     //Stand the model up in the hand, in case it was still tumbling(まだ回っていた場合に備えて、手の中ではモデルをまっすぐにする)
     ResetSpin();
@@ -253,8 +396,7 @@ void ComponentItemPickUp::OnDropped()
         pos.y += throwHeight_;
     }
 
-    //Detach from the hand and stand up straight(手から外して、まっすぐにする)
-    GetOwner()->RemoveComponent<ComponentAttachModel>();
+    //Stand up straight. isHeld_ is false now, so PostUpdate() stops following the hands(まっすぐにする。isHeld_がfalseなので、PostUpdate()はもう手を追わない)
     ResetRotation();
     ResetSpin();
     GetOwner()->SetTranslate(pos);
@@ -287,8 +429,7 @@ void ComponentItemPickUp::OnThrow()
             direction = normalize(-model->GetWorldVectorAxisZ());
     }
 
-    //Detach from the hand(手から外す)
-    GetOwner()->RemoveComponent<ComponentAttachModel>();
+    //isHeld_ is false now, so PostUpdate() stops following the hands(isHeld_がfalseなので、PostUpdate()はもう手を追わない)
 
     //Reset rotation(回転をリセット)
     ResetRotation();
@@ -366,6 +507,15 @@ void ComponentItemPickUp::GUI()
             float vel[3] = {velocity_.x, velocity_.y, velocity_.z};
             if(ImGui::DragFloat3(u8"速度", vel, 0.1f))
                 velocity_ = {vel[0], vel[1], vel[2]};
+
+            //[ADD] Hold position tuning. Change these while holding the item to see the result live
+            //([追加] 持つ位置の調整。アイテムを持ったまま変えると、すぐに結果が見える)
+            ImGui::Separator();
+            ImGui::Text(u8"持つ位置 / Hold position");
+            ImGui::Text("Hand bones R:%d L:%d (-1 = not found)", handRight_, handLeft_);
+            ImGui::DragFloat(u8"持つ位置 上(Up)", &holdUp_, 0.1f);
+            ImGui::DragFloat(u8"持つ位置 前(Forward)", &holdForward_, 0.1f);
+            ImGui::DragFloat(u8"手に移る秒数(Blend sec)", &holdBlendTime_, 0.01f, 0.0f, 1.0f);
 
             //Remove this component from the owner in the GUI(GUI上でオーナーからこのコンポーネントを削除する)
             if(ImGui::Button(u8"削除"))

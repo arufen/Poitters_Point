@@ -101,7 +101,10 @@ bool Player::Init()
 
     SetName("Player");
 
-    auto player = Scene::Object::Create<Object>("Player");
+    //[DELETE] "auto player = Scene::Object::Create<Object>("Player");" was here. It made a SECOND, empty object also named "Player"
+    //that was never used, and anything that searched for "Player" by name could find that empty one instead of us
+    //([削除] ここに「auto player = Scene::Object::Create<Object>("Player");」があった。使われない空のオブジェクトを
+    // もう1つ「Player」という名前で作っていたので、名前で「Player」を探す処理が、自分ではなくその空のほうを見つけることがあった)
     AddComponent<ComponentModel>("data/Game/Models/Player/Salaryman.mv1")
         ->SetAnimation({
             {      "idle",           "data/Game/Models/Player/Anims/Idle.mv1", 0, 1.0f}, // Idle
@@ -109,7 +112,11 @@ bool Player::Init()
             {"carryStart", "data/Game/Models/Player/OR_Anims/Carry_start.mv1", 0, 1.0f}, // 物を持ち上げ始める(OR_Anims)
             { "carryWalk",  "data/Game/Models/Player/OR_Anims/Carry_walk.mv1", 3, 1.5f}, // 物を持ちながら歩く(OR_Anims)
             {     "throw",       "data/Game/Models/Player/OR_Anims/Throw.mv1", 0, 1.0f}, // 物を投げる
-            { "carryHold", "data/Game/Models/Player/OR_Anims/Carry_start.mv1", 0, 1.0f}  // 持ち位置のポーズ(Carry_startの終点フレーム)
+            { "carryHold", "data/Game/Models/Player/OR_Anims/Carry_start.mv1", 0, 1.0f}, // 持ち位置のポーズ(Carry_startの終点フレーム)
+            //[ADD] Knockdown animations made with tools/AnimMaker. ComponentKnockdown plays them when hit
+            //([追加] tools/AnimMakerで作ったダウンのアニメ。当たった時にComponentKnockdownが再生する)
+            {      "down",        "data/Game/Models/Player/OR_Anims/Down.mv1", 0, 1.0f}, // 当たって後ろに飛び、仰向けに倒れる / hit, fly back, land on the back
+            {     "getup",       "data/Game/Models/Player/OR_Anims/GetUp.mv1", 0, 1.0f}  // 座って→しゃがんで→立つ / sit up, crouch, stand
     });
     SetTranslate({0, 5, 0});
 
@@ -152,8 +159,18 @@ void Player::Update()
     if(!ComponentMatch::CanAct(this)) {
         if(auto walk = GetComponent<ComponentStateIdleWalk>())
             walk->SetStatus(Component::StatusBit::Enable, false);
-        if(auto mdl = GetComponent<ComponentModel>())
+
+        //[CHANGE] While the down/getup animation is playing (or lying after K.O.), do NOT play "idle" over it
+        //([変更] down/getupのアニメ中(K.O.で倒れたままの時も)は、上から「idle」を再生しない)
+        auto knock     = GetComponent<ComponentKnockdown>();
+        bool knockAnim = knock && knock->IsPlayingKnockAnimation();
+        if(auto mdl = GetComponent<ComponentModel>(); mdl && !knockAnim)
             mdl->PlayAnimationNoSame("idle", true);
+
+        //[ADD] Getting hit cancels a throw that was in progress (the item was already dropped)
+        //([追加] 当たったら途中の投げを取り消す(物はもう落としている))
+        throwTimer_    = 0.0f;
+        throwReleased_ = false;
         return;
     }
 
@@ -306,12 +323,11 @@ void Player::DrawHpHud()
     if(auto myStats = GetComponent<ComponentCharacterStats>())
         entries.push_back({"PLAYER", myStats, true});
 
-    int npcNumber = 1;    //Shown as NPC 1, NPC 2... (NPCの名前は増え続けるので、表示は1から数え直す)
+    //[CHANGE] Show the character name (CVS / POLICE / JGSDF) instead of "NPC 1, NPC 2...", so you can tell who is who
+    //([変更] 「NPC 1, NPC 2…」ではなくキャラ名(CVS/POLICE/JGSDF)を出す。誰が誰か分かるように)
     for(auto& npc : Scene::GetObjectsPtr<PoittersPoint::Npc>()) {
         if(auto npcStats = npc->GetComponent<ComponentCharacterStats>())
-            entries.push_back({"NPC " + std::to_string(npcNumber), npcStats, false});
-
-        npcNumber++;
+            entries.push_back({npc->GetCharacterDef().name, npcStats, false});
     }
 
     if(entries.empty())
