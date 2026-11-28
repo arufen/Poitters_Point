@@ -52,6 +52,10 @@ struct NpcCharacterDef
 
     //Getting hit(当たった時)
     float knockbackScale;    //Knockback distance x this. 1.0 = normal, bigger = blown further(ふっとぶ距離×これ。1.0＝普通、大きいほど遠くへ飛ぶ)
+
+    //[ADD] Can catch/guard items thrown from the front (ComponentCatchGuard). cha0003 POLICE only
+    //([追加] 前から投げられた物をキャッチ・ガードできる(ComponentCatchGuard)。cha0003 POLICEだけ)
+    bool catchGuard = false;
 };
 
 //The data of one character(1キャラのデータ)
@@ -91,10 +95,12 @@ inline const NpcCharacterDef& GetNpcCharacterDef(NpcCharacterId id)
 
     //-----------------------------------------------------------------------
     //[ADD] cha0003 警察官(POLICE): high defense, good at catching/guarding thrown items
-    //For now: more HP and hard to blow away. Catch/guard is NOT made yet (a later task for this character)
+    //More HP, hard to blow away, and [ADD] catches/guards items thrown from the front (ComponentCatchGuard):
+    //  free hands -> CATCH and throw it right back, busy hands or a heavy item -> GUARD (less damage, no fall-down)
     //Note: POLICE/Anims/Idle.mv1 has NO animation inside (0 animations), so the Salaryman's Idle is borrowed
     //([追加] cha0003 警察官(POLICE)：防御力が高く、投げられた物をキャッチ・ガードしやすい
-    // 今は：HPが多く、吹き飛びにくい。キャッチ・ガードはまだ作っていない(このキャラの今後の作業)
+    // HPが多く、吹き飛びにくい。[追加] 前から投げられた物をキャッチ・ガードする(ComponentCatchGuard)：
+    //   手が空いている→キャッチしてすぐ投げ返す、手がふさがっている・重い物→ガード(ダメージが減る、倒れない)
     // 注意：POLICE/Anims/Idle.mv1の中にはアニメが入っていない(0個)ので、サラリーマンのIdleを借りている)
     //-----------------------------------------------------------------------
     static const NpcCharacterDef POLICE = {
@@ -121,6 +127,7 @@ inline const NpcCharacterDef& GetNpcCharacterDef(NpcCharacterId id)
         1.3f, //Throw a little faster than the Player(投げはプレイヤーより少し速い)
         28.0f / 82.0f,
         0.7f, //Hard to blow away(吹き飛びにくい)
+        true, //[ADD] Catch/guard from the front([追加] 前からの物をキャッチ・ガード)
     };
 
     //-----------------------------------------------------------------------

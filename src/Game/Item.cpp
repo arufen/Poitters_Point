@@ -10,6 +10,7 @@
 #include "Component/ComponentCharacterStats.h"
 #include "Component/ComponentArenaBounds.h"
 #include "Component/ComponentKnockdown.h"
+#include "Component/ComponentCatchGuard.h"
 #include <System/Component/ComponentModel.h>
 #include <System/Component/ComponentCollisionCapsule.h>
 #include <string>
@@ -121,13 +122,37 @@ void Item::OnHit(const ComponentCollision::HitInfo& hit_info)
             //Anyone with ComponentCharacterStats can be hurt. No name check, so Player, Npc0, Npc1... all work
             //(ComponentCharacterStatsを持っていれば誰でもダメージを受ける。名前は見ないので、Player・Npc0・Npc1...全部OK)
             if(auto stats = other->GetComponent<ComponentCharacterStats>()) {
+                //[ADD] cha0003 POLICE: catch or guard from the front, asked BEFORE the damage
+                //([追加] cha0003 POLICE：前からならキャッチかガード。ダメージの「前」に聞く)
+                int  damage    = GetDamage();
+                bool knockDown = true;
+                if(auto guard = other->GetComponent<ComponentCatchGuard>()) {
+                    auto result = guard->TryBlock(std::static_pointer_cast<Item>(shared_from_this()), *pickup);
+
+                    //Caught: the item is in their hands now. No damage, no knockback(キャッチ：物はもう相手の手の中。ダメージもふっとびもなし)
+                    if(result == ComponentCatchGuard::Result::Catch) {
+                        Super::OnHit(hit_info);
+                        return;
+                    }
+
+                    //Guarded: less damage (can be 0) and no fall-down. The item still bounces off
+                    //(ガード：ダメージが減る(0もある)、倒れない。物は普通にはね返る)
+                    if(result == ComponentCatchGuard::Result::Guard) {
+                        damage    = guard->GetGuardDamage(damage);
+                        knockDown = false;
+                        if(damage <= 0)
+                            pickup->OnHitCharacter();
+                    }
+                }
+
                 //TakeDamage returns false if the target is already dead, so the item passes through(すでに死んでいたらfalseなので、アイテムはそのまま通り抜ける)
-                if(stats->TakeDamage(GetDamage())) {
+                if(stats->TakeDamage(damage)) {
                     //Knockback in the direction the item was flying (hit from the left = pushed right). Read it BEFORE
                     //OnHitCharacter(), which slows the item down. No sideways speed (dropped from above) = push away from the item
                     //(アイテムが飛んでいた方向にふっとぶ(左から当たる＝右へ飛ぶ)。アイテムを遅くするOnHitCharacter()の「前」に読む。
                     // 横の速さがない(上から落ちた)ならアイテムから離れる方向へ)
-                    if(auto knock = other->GetComponent<ComponentKnockdown>()) {
+                    auto knock = knockDown ? other->GetComponent<ComponentKnockdown>() : nullptr;
+                    if(knock) {
                         float3 dir = pickup->GetVelocity();
                         dir.y      = 0.0f;
                         if((float)length(dir) < 1.0f) {
