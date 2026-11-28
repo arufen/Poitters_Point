@@ -63,6 +63,12 @@ public:
     // outThrowerは生きているオブジェクトと比べるだけで、ポインタとして使わない)
     bool TakeCatch(const Object*& outThrower);
 
+    //[ADD] The AI asks this every frame: is a thrown item flying at us right now? outDir = flat direction from us to that item.
+    //The AI then turns toward it, so it comes from the FRONT and can be caught/guarded
+    //([追加] AIが毎フレーム聞く：今、投げられた物がこちらへ飛んできているか？outDir＝自分からその物への水平な方向。
+    // AIはその方へ振り向くので、物が「前」から来てキャッチ・ガードできる)
+    bool FindIncomingItem(float3& outDir) const;
+
 private:
     //Tuning (ImGui "CatchGuard")(調整用(ImGuiの「CatchGuard」))
     float frontAngleDeg_ =
@@ -71,6 +77,8 @@ private:
     float guardDamageScale_ = 0.34f;    //Damage x this on a guard: light/medium = 0, heavy = 1(ガード時のダメージ×これ：軽い・普通＝0、重い＝1)
     float guardPushDist_    = 6.0f;     //Push back distance on a guard(ガード時に押される距離)
     float cooldown_         = 0.5f;     //Seconds after a catch/guard before the next one(キャッチ・ガードの後、次ができるまでの秒数)
+    float reactRange_       = 90.0f;    //[ADD] Turn toward items flying at us within this distance([追加] この距離以内でこちらへ飛んでくる物の方へ振り向く)
+    float reactWidth_       = 18.0f;    //[ADD] "At us" = the item passes closer than this(「こちらへ」＝物がこれより近くを通る)
 
     float  cooldownTimer_ = 0.0f;
     float3 pushVel_       = {0.0f, 0.0f, 0.0f};    //Push back speed, slows down every frame(押し戻しの速さ。毎フレーム遅くなる)

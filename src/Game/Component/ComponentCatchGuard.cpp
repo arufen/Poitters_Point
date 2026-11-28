@@ -169,6 +169,50 @@ bool ComponentCatchGuard::TakeCatch(const Object*& outThrower)
     return true;
 }
 
+//[ADD] Look for the closest thrown item that will pass close to us(こちらのすぐ近くを通る、一番近い投げられた物を探す)
+bool ComponentCatchGuard::FindIncomingItem(float3& outDir) const
+{
+    //GetStatus() is not const in the engine, so read it through a non-const this(エンジンのGetStatus()はconstではないので、constでないthisで読む)
+    if(!const_cast<ComponentCatchGuard*>(this)->GetStatus(StatusBit::Enable))
+        return false;
+
+    const float3 myPos    = GetOwner()->GetTranslate();
+    float        bestDist = reactRange_;
+    bool         found    = false;
+
+    for(auto& item : Scene::GetObjectsPtr<PoittersPoint::Item>()) {
+        auto pickup = item->GetComponent<ComponentItemPickUp>();
+        if(!pickup || !pickup->CanDealDamage() || pickup->GetThrower() == GetOwner())
+            continue;    //Not flying, already hit someone, or our own throw(飛んでいない・もう誰かに当たった・自分が投げた物)
+
+        float3 toMe = myPos - item->GetTranslate();
+        toMe.y      = 0.0f;
+        float dist  = (float)length(toMe);
+        if(dist >= bestDist)
+            continue;
+
+        float3 vel   = pickup->GetVelocity();
+        vel.y        = 0.0f;
+        float speed2 = (float)dot(vel, vel);
+        if(speed2 < 1.0f)
+            continue;
+
+        //Moving toward us? Then how close does it pass (closest point of its flat path)
+        //(こちらへ向かっているか？それなら、どれだけ近くを通るか(水平な通り道の一番近い点))
+        float t = (float)dot(toMe, vel) / speed2;
+        if(t <= 0.0f)
+            continue;    //Flying away(遠ざかっている)
+        float3 miss = toMe - vel * t;
+        if((float)length(miss) > reactWidth_)
+            continue;    //Will fly past us(そばを通り過ぎる)
+
+        bestDist = dist;
+        outDir   = (dist > 0.001f) ? -toMe / dist : float3(0.0f, 0.0f, 1.0f);
+        found    = true;
+    }
+    return found;
+}
+
 void ComponentCatchGuard::PostDraw()
 {
     Super::PostDraw();
@@ -215,6 +259,8 @@ void ComponentCatchGuard::GUI()
             ImGui::DragFloat(u8"ガード時のダメージ倍率(Guard dmg x)", &guardDamageScale_, 0.01f, 0.0f, 1.0f);
             ImGui::DragFloat(u8"ガード時の押される距離(Guard push)", &guardPushDist_, 0.1f, 0.0f, 50.0f);
             ImGui::DragFloat(u8"次までの秒数(Cooldown)", &cooldown_, 0.01f, 0.0f, 5.0f);
+            ImGui::DragFloat(u8"振り向く距離(React range)", &reactRange_, 1.0f, 0.0f, 300.0f);
+            ImGui::DragFloat(u8"振り向く幅(React width)", &reactWidth_, 0.5f, 0.0f, 100.0f);
 
             ImGui::TreePop();
         }

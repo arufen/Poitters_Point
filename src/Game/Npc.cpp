@@ -130,6 +130,18 @@ void Npc::Update()
         const Object* thrower = nullptr;
         if(guard->TakeCatch(thrower))
             StartCounterThrow(thrower);
+
+        //[ADD] Something is flying at us: stop and turn to face it, so it comes from the front.
+        //Free hands -> it will be caught, busy hands -> guarded. Not during the throw animation (do not cancel our own throw)
+        //([追加] 何かがこちらへ飛んできている：止まってその方を向く。そうすれば物は「前」から来る。
+        // 手が空いていればキャッチ、ふさがっていればガードになる。投げアニメ中はやらない(自分の投げを止めない))
+        auto   action = GetComponent<ComponentNpcAction>();
+        float3 toItem;
+        if(!(action && action->IsThrowing()) && guard->FindIncomingItem(toItem)) {
+            StopMove();
+            FaceTowards(toItem);
+            return;
+        }
     }
 
     switch(state_) {
