@@ -69,6 +69,10 @@ private:
     //Decide the target when we start aiming(ねらい始める時にターゲットを決める)
     void StartAim();
 
+    //[ADD] cha0003 POLICE: after a catch, aim back at the thrower (thrower is only compared, never used)
+    //([追加] cha0003 POLICE：キャッチの後、投げた相手をねらい返す(throwerは比べるだけで、触らない))
+    void StartCounterThrow(const Object* thrower);
+
     //Direction to throw. Target direction or the random direction(投げる方向。ターゲットの方向かランダムな方向)
     float3 GetAimDirection();
 
@@ -106,6 +110,9 @@ private:
     int holdTimer_        = 0;
     int holdMinFrames_    = 45;    //Shortest pause(一番短い待ち時間)
     int holdRandomFrames_ = 60;    //Random extra pause, 0 to this value(ランダムで足される待ち時間 0〜この値)
+
+    //[ADD] Pause before throwing back a caught item: much shorter than holdMinFrames_(キャッチした物を投げ返す前の待ち：holdMinFrames_よりずっと短い)
+    int counterHoldFrames_ = 12;
 
     int cooldownTimer_  = 0;
     int cooldownFrames_ = 90;    //Wait after the throw(投げたあとの待ち時間)

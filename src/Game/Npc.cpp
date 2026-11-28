@@ -13,6 +13,7 @@
 #include "Component/ComponentMatch.h"
 #include "Component/ComponentKnockdown.h"
 #include "Component/ComponentNpcAction.h"
+#include "Component/ComponentCatchGuard.h"
 #include "StageConfig.h"
 #include <cmath>
 #include <string>
@@ -97,6 +98,16 @@ void Npc::ApplyCharacter(NpcCharacterId id)
     if(!action)
         action = AddComponent<ComponentNpcAction>();
     action->SetThrowTiming(def.throwAnimSpeed, def.throwReleaseRatio);
+
+    //[ADD] cha0003 POLICE: catch/guard items thrown from the front. Other characters do not have it
+    //([追加] cha0003 POLICE：前から投げられた物をキャッチ・ガードする。ほかのキャラは持たない)
+    if(def.catchGuard) {
+        if(!GetComponent<ComponentCatchGuard>())
+            AddComponent<ComponentCatchGuard>();
+    }
+    else {
+        RemoveComponent<ComponentCatchGuard>();
+    }
 }
 
 void Npc::Update()
@@ -111,6 +122,14 @@ void Npc::Update()
         if(auto action = GetComponent<ComponentNpcAction>())
             action->Freeze();
         return;
+    }
+
+    //[ADD] cha0003 POLICE caught something: throw it right back at whoever threw it
+    //([追加] cha0003 POLICEが何かをキャッチした：投げた相手にすぐ投げ返す)
+    if(auto guard = GetComponent<ComponentCatchGuard>()) {
+        const Object* thrower = nullptr;
+        if(guard->TakeCatch(thrower))
+            StartCounterThrow(thrower);
     }
 
     switch(state_) {
@@ -221,6 +240,35 @@ void Npc::StartAim()
     holdTimer_ = holdMinFrames_ + GetRand(holdRandomFrames_);
 
     state_ = State::AimThrow;
+}
+
+//[ADD] Aim at the one who threw the item we just caught, with only a short pause
+//If that one is gone (or unknown), keep the normal target StartAim() picked
+//([追加] 今キャッチした物を投げた相手をねらう。待ち時間は短い。
+// その相手がもういない(またはわからない)なら、StartAim()が選んだ普通のターゲットのまま)
+void Npc::StartCounterThrow(const Object* thrower)
+{
+    StartAim();
+    holdTimer_ = counterHoldFrames_;
+
+    if(!thrower)
+        return;
+
+    for(auto& player : Scene::GetObjectsPtr<PoittersPoint::Player>()) {
+        if(player.get() == thrower) {
+            aimMode_ = AimMode::Player;
+            aimTarget_.reset();
+            return;
+        }
+    }
+
+    for(auto& npc : Scene::GetObjectsPtr<PoittersPoint::Npc>()) {
+        if(npc.get() == thrower && npc.get() != this) {
+            aimMode_   = AimMode::Npc;
+            aimTarget_ = npc;
+            return;
+        }
+    }
 }
 
 float3 Npc::GetAimDirection()

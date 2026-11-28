@@ -158,6 +158,27 @@ void ComponentPlayerPickUpTrigger::PickUpItem()
     }
 }
 
+//[ADD] Catch: same as PickUpItem() but for a flying item and with a short fixed lift time
+//([追加] キャッチ：PickUpItem()と同じだが、飛んでいる物を、短い決まった持ち上げ時間で取る)
+bool ComponentPlayerPickUpTrigger::CatchItem(const PoittersPoint::ItemPtr& item, float holdTime)
+{
+    if(HasItem() || !item)
+        return false;
+
+    auto pickup = item->GetComponent<ComponentItemPickUp>();
+    if(!pickup || pickup->IsHeld())
+        return false;
+
+    //OnPickedUp() also ends the flight (isThrown_ = false), so the item can not hurt anyone any more
+    //(OnPickedUp()は飛ぶのも終わらせる(isThrown_ = false)ので、物はもう誰にもダメージを与えない)
+    pickup->OnPickedUp(GetOwner());
+    heldItem_ = item;
+
+    liftTotal_ = holdTime > 0.0f ? holdTime : 0.0f;
+    liftTimer_ = liftTotal_;
+    return true;
+}
+
 PoittersPoint::ItemPtr ComponentPlayerPickUpTrigger::GetNearbyItem()
 {
     // check every item in the scene that has ComponentItemPickUp

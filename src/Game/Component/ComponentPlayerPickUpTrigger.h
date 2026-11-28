@@ -40,6 +40,12 @@ public:
     //(持っているアイテムを投げずに離す(K.O.の時など)。持ち上げ中もキャンセルする)
     void DropItem();
 
+    //[ADD] cha0003 POLICE: take an item out of the air into the hands (ComponentCatchGuard calls this).
+    //holdTime = short "lift" while the hands settle it. Returns false if we already hold something
+    //([追加] cha0003 POLICE：飛んでいる物を空中で手に取る(ComponentCatchGuardが呼ぶ)。
+    // holdTime＝手に収めるまでの短い「持ち上げ」。もう何か持っていたらfalse)
+    bool CatchItem(const PoittersPoint::ItemPtr& item, float holdTime);
+
     // returns the nearby pickup-able item, or nullptr if none in range
     PoittersPoint::ItemPtr GetNearbyItem();
 
